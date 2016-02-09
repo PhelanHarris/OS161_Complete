@@ -35,11 +35,6 @@
  * functions.
  */
 
-
-
-/* This is only actually available if OPT_SYNCHPROBS is set. */
-int airballoon(int, char **);
-
 /*
  * Test code.
  */
