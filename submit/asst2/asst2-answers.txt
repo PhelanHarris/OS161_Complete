@@ -1,0 +1,58 @@
+Name: Phelan Harris
+Student #: 36154136
+
+Questions:
+
+1. 	On exit: First the thread is removed from its process. Then there is a check to make sure
+	it was actually removed. Then it checks to make sure there wasn't any overflow in
+	the kernel stack. Then interrupts are turned off for this processor. And finally
+	there is a context switch to zombify the thread. The thread will then panic if it
+	is woken up.
+	On sleep: First there is a check to make sure the thread isn't trying to sleep in
+	an interrupt handler. Then it makes sure that the thread holds the spinlock
+	associated with the specified wait channel. Then it makes sure that the thread
+	doesn't hold any more spinlocks. Then there is a context switch to put the 
+	thread in sleep mode and give control to another thread. The sleeping thread will
+	sleep until wakeup is called on its wait channel.
+
+2.	thread_switch() from thread.c (in src/kern/thread) handles the context switch, and calls
+	switchframe_switch (in src/kern/arch/mips/thread/switch.S) to perform the actual context
+	switch using assembly code.
+
+3.	The states that a thread can be in:
+	S_RUN,		/* running */
+	S_READY,	/* ready to run */
+	S_SLEEP,	/* sleeping */
+	S_ZOMBIE,	/* zombie; exited but not yet deleted */
+
+4.	When interrupts are turned off, it means that when an interrupt occurs, the handler
+	doesn't deal with it until they are turned back on. They are turned off by calling
+	splhigh(). Interrupts are disabled during thread subsystem code in order to make sure
+	this code is executed in its entirety. It would be very bad if an interrupt occured in
+	the middle of a context switch.
+
+5.	The thread that is being woken up is removed from the wait channel queue that it is in,
+	and then thread_make_runnable() is called on it, which puts it on the run queue. It will
+	then eventually be run after a thread_switch() is called and it is the next thread in 
+	the run queue.
+
+6.	There is a schedule() function, however currently it does nothing. So the thread_switch()
+	function simply takes the next thread in the run queue.
+
+7.	thread_switch() just takes the next thread in the run queue, and I assume that later in
+	the course we will implement schedule() so that it reorganizes the run queue based on
+	some priority.
+
+8.	hardclock() (in src/kern/thread/clock.c) periodically calls schedule() (to reorganize the
+	run queue) and thread_consider_migration() to help balance the amount of work being done
+	on each cpu. thread_yeild() is also called at the end of each hardclock() call, which 
+	starts a context switch.
+
+9.	wchan_sleep() is used in the P() function to sleep the thread until sem_count is not 0.
+	wchan_wakeone() is used in the V() function to wake up one thread waiting on the semaphore.
+
+10.	This happens because every wchan has a corresponding spinlock, and this lock must be held
+	before calling wchan_sleep(). The lock is only released after the thread has gone to sleep.
+	(the lock is released in thread_switch(), after the thread is added to the sleep queue.)
+	wchan_wakeone() also requires the lock to be held before it is called so it can only try
+	to wake up a thread that is already asleep.

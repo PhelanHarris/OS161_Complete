@@ -1,0 +1,74 @@
+Name: Phelan Harris
+Student #: 36154136
+
+Questions:
+1. 	The first function that launches on startup is start(). gdb output:
+	start () at ../../arch/sys161/main/start.S:54
+54	   addiu sp, sp, -24
+
+2. 	The first assembly instruction:
+	addiu sp, sp, -24
+
+3. 	gdb output:
+Num     Type           Disp Enb Address    What
+1       breakpoint     keep y   0x800139e4 in kmain at ../../main/main.c:211
+2       breakpoint     keep y   0x800143e4 in showmenu at ../../main/menu.c:425
+
+4.	Between the beginning of the execution and the invocation of kmain, several things are done:
+	a) Sets up the stack frame
+	b) System/161 loader sets up boot stack
+	c) The kernel loads
+	d) The symbol _end is generated
+	e) The memory map is set up
+	f) The exception handler code is copied onto the first page of memory
+	g) The TLB is initialized
+	h) The status register is set up
+
+5.	jal kmain
+
+6.	The following is the gdb output during the early initialization of boot():
+109		ram_bootstrap();
+(gdb) n
+110		proc_bootstrap();
+(gdb) n
+111		thread_bootstrap();
+(gdb) n
+112		hardclock_bootstrap();
+(gdb) n
+113		vfs_bootstrap();
+(gdb) n
+114		kheap_nextgeneration();
+
+7.	Unable to read this variable:
+(gdb) p *bootcpu
+Cannot access memory at address 0x80000
+
+8. This time it worked:
+(gdb) p *bootcpu
+$1 = {c_self = 0x8003af00, c_number = 0, c_hardware_number = 0, c_curthread = 0x8003bf80, 
+  c_zombies = {tl_head = {tln_prev = 0x0, tln_next = 0x8003af1c, tln_self = 0x0}, 
+    tl_tail = {tln_prev = 0x8003af10, tln_next = 0x0, tln_self = 0x0}, tl_count = 0}, 
+  c_hardclocks = 0, c_spinlocks = 0, c_isidle = false, c_runqueue = {tl_head = {
+      tln_prev = 0x0, tln_next = 0x8003af44, tln_self = 0x0}, tl_tail = {
+      tln_prev = 0x8003af38, tln_next = 0x0, tln_self = 0x0}, tl_count = 0}, 
+  c_runqueue_lock = {splk_lock = 0, splk_holder = 0x0}, c_ipi_pending = 0, c_shootdown = {{
+      ts_placeholder = 0} <repeats 16 times>}, c_numshootdown = 0, c_ipi_lock = {
+    splk_lock = 0, splk_holder = 0x0}}
+
+9.	No cpus :(
+(gdb) cpuarray allcpus
+0 cpus
+
+10.	1 cpu! :)
+(gdb) cpuarray allcpus
+1 cpus
+cpu 0:
+$2 = {c_self = 0x8003af00, c_number = 0, c_hardware_number = 0, c_curthread = 0x8003bf80, 
+  c_zombies = {tl_head = {tln_prev = 0x0, tln_next = 0x8003af1c, tln_self = 0x0}, 
+    tl_tail = {tln_prev = 0x8003af10, tln_next = 0x0, tln_self = 0x0}, tl_count = 0}, 
+  c_hardclocks = 1, c_spinlocks = 0, c_isidle = false, c_runqueue = {tl_head = {
+      tln_prev = 0x0, tln_next = 0x8003af44, tln_self = 0x0}, tl_tail = {
+      tln_prev = 0x8003af38, tln_next = 0x0, tln_self = 0x0}, tl_count = 0}, 
+  c_runqueue_lock = {splk_lock = 0, splk_holder = 0x0}, c_ipi_pending = 0, c_shootdown = {{
+      ts_placeholder = 0} <repeats 16 times>}, c_numshootdown = 0, c_ipi_lock = {
+    splk_lock = 0, splk_holder = 0x0}}

@@ -1,0 +1,120 @@
+Name: Phelan Harris
+Student #: 36154136
+
+-----------------------------------------------------------------------
+
+Output of sys161:
+sys161: System/161 release 2.0.3, compiled Aug 10 2015 13:31:07
+
+OS/161 base system version 1.99.08
+Copyright (c) 2000, 2001-2005, 2008-2011, 2013, 2014
+   President and Fellows of Harvard College.  All rights reserved.
+
+Put-your-group-name-here's system version 0 (DUMBVM #1)
+
+292k physical memory available
+Device probe...
+lamebus0 (system main bus)
+emu0 at lamebus0
+ltrace0 at lamebus0
+ltimer0 at lamebus0
+beep0 at ltimer0
+rtclock0 at ltimer0
+lrandom0 at lamebus0
+random0 at lrandom0
+lhd0 at lamebus0
+lhd1 at lamebus0
+lser0 at lamebus0
+con0 at lser0
+
+cpu0: MIPS/161 (System/161 2.x) features 0x0
+OS/161 kernel [? for menu]:
+
+-----------------------------------------------------------------------
+
+Output of git log:
+commit 5154eb40c358ea98db311c7ca107c1bd6902c1e2
+Author: phelan <phelan@live.ca>
+Date:   Wed Jan 6 17:24:29 2016 -0800
+
+    Initial commit of os161 for cpen331
+
+
+-----------------------------------------------------------------------
+
+Output of git tag:
+asst0-start
+
+-----------------------------------------------------------------------
+
+Questions
+1. 	When user-level code faults (i.e. tries to access invalid memory), 
+	a trap occurs. When a trap occurs, the assembly code in exception-mips1.S
+	located in /src/kern/arch/locore/ is executed. It seems like an exception
+	can enter at line 68 or line 86, depending on if it is an UTLB exception
+	or a general exception. Both kinds of exceptions will jump to the shared
+	common_exception code, which will eventually call the mips_trap function in
+	trap.c located in /src/kern/arch/mips/locore/. This is the case for both traps
+	and interrupts (which seem to behave the same way as traps). From here, the
+	exception is sent elsewhere depending on whether it is an interrupt, syscall,
+	TLB exception, or bus error.
+
+2.	The assembly instruction "syscall" is called on line 84 of syscall-mips.S
+	located in /src/userland/lib/libc/arch/mips/. This is in the userland folder
+	which I think is why it causes a trap.
+
+3. 	The functions in these folders look like basic C functions that would be useful
+	for both writing kernel as well as for use in userland.
+
+4.	Two things configured by the configure script: DEBUG, and OSTREE.
+	This may be invalidated if you wanted to change the location of the root directory
+
+5.	A function will be machine dependent if it is written in an assembly language,
+	since different machines read different assembly languages. If you wanted to 
+	have an assembly function on another machine, you'd have to rewrite it for that
+	machine, so having that separated from the machine-independant functions
+	allows you to not have to rewrite everything, only the specific machine-
+	dependant code.
+
+6.  A trapframe is 37 words, and it seems to be this size in order to store 37
+	different registers that are needed when passed to mips_trap(trapframe*).
+
+7.	This will have to be rerun if you added/removed/renamed any kernel files
+
+8.	As we did in the earlier part of this assignment when configuring and building
+	the source tree, if you ever you configure DUMBVM (with ./config DUMBVM), you have to
+	run bmake depend in the DUMBVM directory. Or if you change header file
+	inclusions.
+
+9.	You have to run bmake and bmake install in order to build userland, which is
+	necessary whenever you make a change to the kernel.
+
+10.	In order to add a command:
+		a) Open menu.c located in /src/kern/main/
+		b) Create a function called cmd_hello: 
+			static
+			int
+ 			cmd_hello(int nargs, char **args)
+ 			{
+			 	kprintf("Hello world!\n");
+			 	(void)nargs;
+				(void)args;
+			 	return 0;
+			 }
+		c) add this command to the cmdtable: {"hello", cmd_hello}
+		d) (optional I think) add your command to opsmenu so that it shows up in the menu
+		e) run bmake and bmake install in /root/
+
+11. I assume that the standard utilities that are present on my machine aren't compiled
+	to work on OS161 so they wouldn't likely work.
+
+12. I think the return value goes into a register somewhere, but I am not really sure
+	where it's used after that.
+
+13. In order to add a new syscall:
+		a) add the syscall to syscall.h in /src/kern/include/kern/ making sure it has its
+		own number.
+		b) add the syscall to the switch statement in syscall.c in /src/kern/arch/mips/syscall/
+		c) add the syscall to the syscall.h file in /src/kern/includ/kern/
+		d) add a function prototype to syscall.h in /src/kern/include/
+	Then you would have to rerun the kern/conf/config script, bmake depend, bmake, and bmake install
