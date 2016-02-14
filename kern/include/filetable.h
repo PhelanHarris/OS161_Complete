@@ -1,0 +1,10 @@
+#ifndef FILETABLEINLINE
+#define FILETABLEINLINE INLINE
+#endif
+
+DECLARRAY(file, FILETABLEINLINE);
+DEFARRAY(file, FILETABLEINLINE);
+
+struct file {
+	// stuff here
+};
