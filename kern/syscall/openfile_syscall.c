@@ -18,10 +18,9 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	struct vnode *vn;
 	struct file *f;
 	unsigned fd;
-	int result;
-
 	char *name_buffer;
 	size_t len;
+	int result;
 
 	// Copy filename locally
 	name_buffer = (char *) kmalloc(sizeof(char)*PATH_MAX);
@@ -32,16 +31,13 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	}
 
 	// Open file
-	result = vfs_open(filename, flags, 0, &vn);
-	if (result) {
-		kfree(name_buffer);
-		return result;
-	}
+	result = vfs_open(name_buffer, flags, 0, &vn);
+	kfree(name_buffer);
+	if (result) return result;
 
 	// Create filetable entry
-	result = filetable_add(vn, &fd);
+	result = filetable_add(curproc->ft, vn, &fd);
 	if (result) {
-		kfree(name_buffer);
 		vfs_close(vn);
 		return result;
 	}

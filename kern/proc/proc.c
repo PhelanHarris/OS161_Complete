@@ -201,7 +201,6 @@ proc_create_runprogram(const char *name)
 	}
 
 	/* VM fields */
-
 	newproc->p_addrspace = NULL;
 
 	/* VFS fields */

@@ -5,8 +5,6 @@
 
 #include <syscall.h>
 #include <filetable.h>
-#include <vfs.h>
-#include <synch.h>
 
 int 
 sys_dup2 (int fd_old, int fd_new)

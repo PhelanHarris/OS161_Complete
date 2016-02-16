@@ -44,6 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <filetable.h>
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -89,6 +90,13 @@ runprogram(char *progname)
 
 	/* Done with the file now. */
 	vfs_close(v);
+
+	/* Define filetable */
+	result = filetable_init(curproc->ft);
+	if (result) {
+		/* p_addrspace will go away when curproc is destroyed */
+		return result;
+	}
 
 	/* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);
