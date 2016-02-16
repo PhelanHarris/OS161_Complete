@@ -8,15 +8,78 @@
 #include <vnode.h>
 #include <spinlock.h>
 #include <kern/errno.h>
+#include <vfs.h>
 
-void
+int
 filetable_init(struct filetable *ft)
 {	
-	// init structs
+	struct vnode *in_vn, *out_vn, *err_vn;
+	char *in_str = NULL, *out_str = NULL, *err_srt = NULL;
+	int result;
+
+	// Init STDIN
+	in_str = kstrdup("con:");
+	result = vfs_open(in_str, O_RDONLY, 0, in_vn);
+	if (result) {
+		kfree(in_str);
+		vfs_close(in_vn);
+		return result;
+	}
+	
+	// Init STDOUT
+	out_str = kstrdup("con:");
+	result = vfs_open(out_str, O_WRONLY, 0, out_vn);
+	if (result) {
+		kfree(in_str);
+		kfree(out_str);
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		return result;
+	}
+
+	// Init STDERR
+	err_str = kstrdup("con:");
+	result = vfs_open(err_str, O_WRONLY, 0, err_vn);
+	if (result) {
+		kfree(in_str);
+		kfree(out_str);
+		kfree(err_str);
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		vfs_close(err_vn);
+		return result;
+	}
+
+	// Init structs
 	ft->ft_arr = filearray_create();
 	ft->ft_lock = lock_create("filetablelock");
 
-	// TODO: init STD streams
+	// Add standard streams
+	result = filetable_add(ft, in_vn, NULL);
+	if (result) {
+		filetable_destory(ft);
+		return result;
+	}
+
+	result = filetable_add(ft, out_vn, NULL);
+	if (result) {
+		filetable_destory(ft);
+		return result;
+	}
+
+	result = filetable_add(ft, err_vn, NULL);
+	if (result) {
+		filetable_destory(ft);
+		return result;
+	}
+
+	return 0;
+}
+
+void
+filetable_destory(struct filetable *ft)
+{
+	// TODO: implement
 }
 
 int

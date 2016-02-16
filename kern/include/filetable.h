@@ -31,6 +31,8 @@ struct filetable {
 	struct lock *ft_lock;
 };
 
+int filetable_init(struct filetable *ft);
+int filetable_destroy(struct filetable *ft);
 int filetable_get(struct filetable *ft, unsigned fd, struct file *f_ret);
 int filetable_add(struct filetable *ft, vnode *vn, unsigned *fd_ret);
 int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned *fd_new);

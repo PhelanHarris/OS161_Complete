@@ -36,7 +36,7 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	if (result) return result;
 
 	// Create filetable entry
-	result = filetable_add(vn, &fd);
+	result = filetable_add(curproc->ft, vn, &fd);
 	if (result) {
 		vfs_close(vn);
 		return result;

@@ -15,7 +15,7 @@ sys_close (int fd)
 	int result;
 
 	// Get filetable entry
-	result = filetable_get((unsigned) fd, &f);
+	result = filetable_get(curproc->ft, (unsigned) fd, &f);
 	if (result) {
 		return result;
 	}
@@ -26,6 +26,6 @@ sys_close (int fd)
 	lock_release(f->f_lock);
 
 	// Remove filetable entry
-	filetable_remove((unsigned) fd);
+	filetable_remove(curproc->ft, (unsigned) fd);
 	return 0;
 }
