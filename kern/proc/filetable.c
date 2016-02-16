@@ -23,7 +23,7 @@ filetable_init()
 }
 
 int
-filetable_get(unsigned fd, struct file *f_ret)
+filetable_get(unsigned fd, struct file **f_ret)
 {
 	f_ret = NULL;
 
