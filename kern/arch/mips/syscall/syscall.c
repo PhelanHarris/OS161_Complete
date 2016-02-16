@@ -118,7 +118,7 @@ syscall(struct trapframe *tf)
 		 /* Add stuff here */
 
 		case SYS_open:
-		retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1);
+		retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &err);
 		break;
 
 		case SYS_read:
@@ -130,34 +130,29 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS_lseek:
-
 		arg64 = (off_t) (tf->a2 << 32 | tf->a3);
 		copyin((const_userptr_t)(tf->tf_sp + 16), &arg4, sizeof(int));
-
 		retval64 = sys_lseek((int)tf-tf_a0, arg64, arg4, &err);
-
 		retval = retval64 >> 32;
 		retval2 = retval64 & 0x00000000FFFFFFFF;
-
 		if (!err)
 			tf->tf_v1 = retval2;
-
 		break;
 
 		case SYS_close:
-
+		err = sys_close((int)tf->tf_a0);
 		break;
 
 		case SYS_dup2:
-
+		retval = sys_dup2((int)tf->tf_a0, (int)tf->tf_a1, &err);
 		break;
 
 		case SYS_chdir:
-
+		err = sys_chdir((const char*)tf->tf_a0);
 		break;
 
 		case SYS___getcwd:
-
+		retval = sys___getcwd((char*)tf->tf_a0, (size_t)tf->tf_a1, &err);
 		break;
 
 	    default:

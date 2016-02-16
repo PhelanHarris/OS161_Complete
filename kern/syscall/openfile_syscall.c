@@ -13,7 +13,7 @@
 #include <limits.h>
 
 int 
-sys_open (const char *filename, int flags, int *fd_ret)
+sys_open (const char *filename, int flags, int *error)
 {
 	struct vnode *vn;
 	struct file *f;
@@ -21,27 +21,32 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	char *name_buffer;
 	size_t len;
 	int result;
+	error = 0;
 
 	// Copy filename locally
 	name_buffer = (char *) kmalloc(sizeof(char)*PATH_MAX);
 	result = copyinstr((const_userptr_t)filename, name_buffer, PATH_MAX, &len);
 	if (result) {
 		kfree(name_buffer);
-		return result;
+		error = result;
+		return -1;
 	}
 
 	// Open file
 	result = vfs_open(name_buffer, flags, 0, &vn);
 	kfree(name_buffer);
-	if (result) return result;
+	if (result){
+		error = result;
+		return -1;
+	}
 
 	// Create filetable entry
 	result = filetable_add(curproc->ft, vn, &fd);
 	if (result) {
 		vfs_close(vn);
-		return result;
+		error = result;
+		return -1;
 	}
 
-	*fd_ret = (int) fd;
-	return 0;
+	return fd;
 }

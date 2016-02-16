@@ -9,15 +9,20 @@
 #include <uio.h>
 
 int
-sys__getcwd (char *buf, size_t buflen);
+sys___getcwd (char *buf, size_t buflen, int *error);
 {
   	struct iovec iov;
   	struct uio uio;
   	int result;
 
 	// Create uio for data transfer
-	void uio_kinit(&iov, &uio, buf, buflen, 0 UIO_READ);
+	void uio_kinit(&iov, &uio, buf, buflen, 0, UIO_READ);
 
 	// Return result
-	return vfs_getcwd(uio);
+	result = vfs_getcwd(uio);
+	if (result){
+		error = result;
+		return -1;
+	}
+	return result;
 }
