@@ -22,10 +22,16 @@ filetable_init()
 		filetable = filearray_create();
 }
 
-struct file *
-filetable_get(unsigned fd)
+int
+filetable_get(unsigned fd, struct file *f_ret)
 {
-	return filearray_get(filetable, fd);
+	f_ret = NULL;
+
+	if (fd > filetable->arr->num) return EBADF;
+	*f_ret = filearray_get(filetable, fd);
+
+	if (f_ret == NULL) return EBADF;
+	return 0;
 }
 
 /*
@@ -42,7 +48,7 @@ filetable_add(vnode *vn, unsigned *fd_ret)
 	// Make atomic
 	lock_acquire(filetable_lock);
 
-	// TODO: check if not at max number of files (return EMFILE (proc) / ENFILE (sys-wide))
+	// TODO: check if not at max number of files (return EMFILE/ENFILE)
 	
 	// Create new file object & add to filetable
 	f = kmalloc(sizeof(struct file));

@@ -26,8 +26,9 @@ struct file {
 	struct lock *f_lock; 
 };
 
-struct file *filetable_get(unsigned fd);
+int filetable_get(unsigned fd, struct file *f_ret);
 int filetable_add(vnode *vn, unsigned *fd_ret);
+int filetable_clone(unsigned fd_old, unsigned *fd_new);
 void filetable_remove(unsigned fd);
 
 #endif /* _FILETABLE_H_ */
