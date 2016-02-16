@@ -10,6 +10,6 @@ int
 sys_dup2 (int fd_old, int fd_new)
 {
 	sys_close(fd_new);
-	filetable_clone((unsigned) fd_old, (unsigned) fd_new);
+	filetable_clone(curproc->ft, (unsigned) fd_old, (unsigned) fd_new);
 	return 0;
 }

@@ -21,8 +21,9 @@ getLowestIndex(struct filetable *ft)
 }
 
 int
-filetable_init(struct filetable *ft)
+filetable_create(struct filetable **ft_ret)
 {	
+	struct filetable *ft;
 	struct vnode *in_vn, *out_vn, *err_vn;
 	char *in_str = NULL, *out_str = NULL, *err_srt = NULL;
 	int result;
@@ -61,6 +62,7 @@ filetable_init(struct filetable *ft)
 	}
 
 	// Init structs
+	ft = kmalloc(sizeof(struct filetable));
 	ft->ft_arr = kmalloc(sizeof(struct file *)*MAX_OPEN);
 	ft->ft_lock = lock_create("filetablelock");
 
@@ -83,6 +85,7 @@ filetable_init(struct filetable *ft)
 		return result;
 	}
 
+	ft_ret = ft;
 	return 0;
 }
 
