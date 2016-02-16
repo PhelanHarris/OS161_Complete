@@ -59,6 +59,8 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 
-int sys_open(const char *filename, int flags, mode_t mode);
+int sys_open(const char *filename, int flags, int *fd_ret);
+int sys_close(int fd);
+int sys_dup2(int fd_old, int fd_new);
 
 #endif /* _SYSCALL_H_ */

@@ -42,7 +42,7 @@ filetable_get(unsigned fd, struct file **f_ret)
 int
 filetable_add(vnode *vn, unsigned *fd_ret)
 {
-	int ret;
+	int result;
 	struct file *f;
 
 	// Make atomic
@@ -52,10 +52,10 @@ filetable_add(vnode *vn, unsigned *fd_ret)
 	
 	// Create new file object & add to filetable
 	f = kmalloc(sizeof(struct file));
-	ret = filearray_add(filetable, f, fd_ret);
-	if (ret) {
+	result = filearray_add(filetable, f, fd_ret);
+	if (result) {
 		kfree(k);
-		return ret;
+		return result;
 	}
 
 	// Populate
@@ -66,17 +66,20 @@ filetable_add(vnode *vn, unsigned *fd_ret)
 	f->f_lock = lock_create("filelock"); // name is not important
 
 	lock_release(filetable_lock);
-	return ret;
+	return result;
 }
 
 /*
- * Clones a file descriptor and returns it in fd_new. Returns 0 on success,
- * or the error code.
+ * Clones a file descriptor into a new one. Returns 0 on success, or the error
+ * code. The new file descriptor must point to an empty spot.
  */
 int
-filetable_clone(unsigned fd_old, unsigned *fd_new) {
-	int ret;
+filetable_clone(unsigned fd_old, unsigned fd_new)
+{
+	int result;
 	struct file *f = NULL;
+
+	KASSERT(filearray_get(filetable, fd_new) == NULL);
 
 	// Make atomic
 	lock_acquire(filetable_lock);
@@ -86,11 +89,16 @@ filetable_clone(unsigned fd_old, unsigned *fd_new) {
 
 	// TODO: if max number of files return EMFILE (proc) / ENFILE (sys-wide)
 	
-	f->refcount++;	
-	ret = filearray_add(filetable, f, fd_new);
+	f->refcount++;
+	result = filearray_add(filetable, f, fd_new);
+	if (result) {
+		f->refcount--;
+		lock_release(filetable_lock);
+		return result;
+	}
 
 	lock_release(filetable_lock);
-	return ret;
+	return 0;
 }
 
 /*

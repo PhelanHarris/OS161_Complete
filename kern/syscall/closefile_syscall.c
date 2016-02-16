@@ -5,12 +5,7 @@
 
 #include <syscall.h>
 #include <filetable.h>
-#include <kern/errno.h>
-#include <types.h>
-#include <vnode.h>
 #include <vfs.h>
-#include <copyinout.h>
-#include <limits.h>
 #include <synch.h>
 
 int 
