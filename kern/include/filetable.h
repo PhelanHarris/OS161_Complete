@@ -26,9 +26,14 @@ struct file {
 	struct lock *f_lock; 
 };
 
-int filetable_get(unsigned fd, struct file *f_ret);
-int filetable_add(vnode *vn, unsigned *fd_ret);
-int filetable_clone(unsigned fd_old, unsigned *fd_new);
-void filetable_remove(unsigned fd);
+struct filetable {
+	struct filearray ft_arr;
+	struct lock *ft_lock;
+};
+
+int filetable_get(struct filetable *ft, unsigned fd, struct file *f_ret);
+int filetable_add(struct filetable *ft, vnode *vn, unsigned *fd_ret);
+int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned *fd_new);
+int filetable_remove(struct filetable *ft, unsigned fd);
 
 #endif /* _FILETABLE_H_ */

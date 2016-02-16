@@ -9,29 +9,32 @@
 #include <spinlock.h>
 #include <kern/errno.h>
 
-struct filearray *filetable = NULL;
-struct lock *filetable_lock = NULL;
-
 void
-filetable_init()
+filetable_init(struct filetable *ft)
 {	
-	if (filetable_lock == NULL)
-		filetable_lock = lock_create("filetable");
+	// init structs
+	ft->ft_arr = filearray_create();
+	ft->ft_lock = lock_create("filetablelock");
 
-	if (filetable == NULL)
-		filetable = filearray_create();
+	// TODO: init STD streams
 }
 
 int
-filetable_get(unsigned fd, struct file **f_ret)
+filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
 {
 	f_ret = NULL;
 
-	if (fd > filetable->arr->num) return EBADF;
+	if (fd > filetable_size(ft)) return EBADF;
 	*f_ret = filearray_get(filetable, fd);
 
 	if (f_ret == NULL) return EBADF;
 	return 0;
+}
+
+int
+filetable_size(struct filetable *ft)
+{
+	return filearray_num(ft->ft_arr);
 }
 
 /*
@@ -40,21 +43,26 @@ filetable_get(unsigned fd, struct file **f_ret)
  * code and fd_ret will be null.
  */
 int
-filetable_add(vnode *vn, unsigned *fd_ret)
+filetable_add(struct filetable *ft, vnode *vn, unsigned *fd_ret)
 {
 	int result;
 	struct file *f;
 
 	// Make atomic
-	lock_acquire(filetable_lock);
+	lock_acquire(ft->ft_lock);
 
-	// TODO: check if not at max number of files (return EMFILE/ENFILE)
+	// Reject if too many files open
+	if (filearray_size(ft) == MAX_OPEN) {
+		lock_release(ft->ft_lock);
+		return EMFILE;
+	}
 	
 	// Create new file object & add to filetable
 	f = kmalloc(sizeof(struct file));
-	result = filearray_add(filetable, f, fd_ret);
+	result = filearray_add(ft->ft_arr, f, fd_ret);
 	if (result) {
 		kfree(k);
+		lock_release(ft->ft_lock);
 		return result;
 	}
 
@@ -65,8 +73,8 @@ filetable_add(vnode *vn, unsigned *fd_ret)
 	f->f_refcount = 1;
 	f->f_lock = lock_create("filelock"); // name is not important
 
-	lock_release(filetable_lock);
-	return result;
+	lock_release(ft->ft_lock);
+	return 0;
 }
 
 /*
@@ -74,48 +82,57 @@ filetable_add(vnode *vn, unsigned *fd_ret)
  * code. The new file descriptor must point to an empty spot.
  */
 int
-filetable_clone(unsigned fd_old, unsigned fd_new)
+filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 {
 	int result;
 	struct file *f = NULL;
 
-	KASSERT(filearray_get(filetable, fd_new) == NULL);
+	KASSERT(filearray_get(ft->ft_arr, fd_new) == NULL);
 
 	// Make atomic
-	lock_acquire(filetable_lock);
+	lock_acquire(ft->ft_lock);
 
-	f = filearray_get(filetable, fd);
-	if (f == NULL) return EBADF;
+	// Get file object
+	f = filearray_get(ft->ft_arr, fd);
+	if (f == NULL) {
+		lock_release(ft->ft_lock);
+		return EBADF;
+	}
 
-	// TODO: if max number of files return EMFILE (proc) / ENFILE (sys-wide)
+	// Reject if too many files open
+	if (filearray_size(ft) == MAX_OPEN) {
+		lock_release(ft->ft_lock);
+		return EMFILE;
+	}
 	
+	// Add new fd
 	f->refcount++;
-	result = filearray_add(filetable, f, fd_new);
+	result = filearray_add(ft->ft_arr, f, fd_new);
 	if (result) {
 		f->refcount--;
-		lock_release(filetable_lock);
+		lock_release(ft->ft_lock);
 		return result;
 	}
 
-	lock_release(filetable_lock);
+	lock_release(ft->ft_lock);
 	return 0;
 }
 
 /*
  * Removes a file descriptor and the file object if no other fd points to it.
  */
-void
-filetable_remove(unsigned fd) {
+int
+filetable_remove(struct filetable *ft, unsigned fd) {
 	struct file *f = NULL;
 
 	// Make atomic
-	lock_acquire(filetable_lock);
+	lock_acquire(ft->ft_lock);
 
-	f = filearray_get(filetable, fd);
+	f = filearray_get(ft->ft_arr, fd);
 	if (f == NULL) return EBADF;
 
 	// Remove fd
-	filearray_remove(filetable, fd);
+	filearray_remove(ft->ft_arr, fd);
 
 	// Delete if refcount is 0 after decrement
 	if (--f->f_refcount == 0) {
@@ -123,5 +140,6 @@ filetable_remove(unsigned fd) {
 		kfree(f);
 	}
 
-	lock_release(filetable_lock);
+	lock_release(ft->ft_lock);
+	return 0;
 }
