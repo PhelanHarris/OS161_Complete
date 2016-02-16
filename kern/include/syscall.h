@@ -62,5 +62,7 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_open(const char *filename, int flags, int *fd_ret);
 int sys_close(int fd);
 int sys_dup2(int fd_old, int fd_new);
+int sys_chdir(const char *pathname);
+int sys__getcwd(char *buf, size_t buflen);
 
 #endif /* _SYSCALL_H_ */
