@@ -1,11 +1,33 @@
+/*
+ * Filetable
+ */
+
 #ifndef _FILETABLE_H_
 #define _FILETABLE_H_
 
+#include <array.h>
+#include <types.h>
+#include <vnode.h>
+#include <synch.h>
+
+#ifndef FILETABLEINLINE
+#define FILETABLEINLINE INLINE
+#endif
+
+// Delcares struct filearray
 DECLARRAY(file, FILETABLEINLINE);
 DEFARRAY(file, FILETABLEINLINE);
 
 struct file {
-	// stuff here
+	vnode *f_vn;
+	mode_t f_mode;
+	int f_cursor;
+	int f_refcount;
+	struct lock *f_lock; 
 };
 
-#endif
+struct file *filetable_get(unsigned fd);
+int filetable_add(vnode *vn, unsigned *fd_ret);
+void filetable_remove(unsigned fd);
+
+#endif /* _FILETABLE_H_ */
