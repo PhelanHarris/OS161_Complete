@@ -27,8 +27,10 @@ struct file {
 };
 
 struct filetable {
-	struct filearray ft_arr;
+	struct file *ft_arr;
 	struct lock *ft_lock;
+	unsigned ft_size;
+	unsigned ft_lastindex;
 };
 
 int filetable_init(struct filetable *ft);
