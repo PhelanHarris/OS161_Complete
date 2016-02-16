@@ -21,7 +21,7 @@ DEFARRAY(file, FILETABLEINLINE);
 struct file {
 	vnode *f_vn;
 	mode_t f_mode;
-	int f_cursor;
+	off_t f_cursor;
 	int f_refcount;
 	struct lock *f_lock; 
 };
