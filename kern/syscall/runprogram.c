@@ -92,7 +92,7 @@ runprogram(char *progname)
 	vfs_close(v);
 
 	/* Define filetable */
-	result = filetable_init(curproc->ft);
+	result = filetable_create(&curproc->ft);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
 		return result;
