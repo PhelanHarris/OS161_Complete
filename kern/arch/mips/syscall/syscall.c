@@ -81,9 +81,9 @@ syscall(struct trapframe *tf)
 {
 	int callno;
 	int32_t retval;
-	uint32_t retval1, retval2;
+	uint32_t retval2;
 	off_t retval64;
-	ssize_t retval_ssize_t;
+	//ssize_t retval_ssize_t;
 	off_t arg64;
 	int arg4;
 	int err;
@@ -130,9 +130,9 @@ syscall(struct trapframe *tf)
 		break;
 
 		case SYS_lseek:
-		arg64 = (off_t) (tf->a2 << 32 | tf->a3);
+		arg64 = ((off_t) tf->tf_a2 << 32 | tf->tf_a3);
 		copyin((const_userptr_t)(tf->tf_sp + 16), &arg4, sizeof(int));
-		retval64 = sys_lseek((int)tf-tf_a0, arg64, arg4, &err);
+		retval64 = sys_lseek((int)tf->tf_a0, arg64, arg4, &err);
 		retval = retval64 >> 32;
 		retval2 = retval64 & 0x00000000FFFFFFFF;
 		if (!err)
