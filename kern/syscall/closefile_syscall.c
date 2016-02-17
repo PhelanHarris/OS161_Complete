@@ -16,6 +16,7 @@ sys_close (int fd)
 	int result;
 
 	// Get filetable entry
+	kprintf("Curproc: %s", curproc->p_name);
 	result = filetable_get(curproc->p_ft, (unsigned) fd, &f);
 	if (result) {
 		return result;
@@ -27,6 +28,6 @@ sys_close (int fd)
 	lock_release(f->f_lock);
 
 	// Remove filetable entry
-	filetable_remove(curproc->ft, (unsigned) fd);
+	filetable_remove(curproc->p_ft, (unsigned) fd);
 	return 0;
 }

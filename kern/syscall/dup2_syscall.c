@@ -5,6 +5,7 @@
 
 #include <syscall.h>
 #include <filetable.h>
+#include <current.h>
 
 int 
 sys_dup2 (int fd_old, int fd_new, int *error)
@@ -16,7 +17,7 @@ sys_dup2 (int fd_old, int fd_new, int *error)
 		return result;
 	}
 
-	result = filetable_clone(curproc->ft, (unsigned) fd_old, (unsigned) fd_new);
+	result = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
 	if (result){
 		error = result;
 		return -1;

@@ -5,12 +5,13 @@
 
 #include <syscall.h>
 #include <filetable.h>
-#include <kern/errno.h>
+#include <vfs.h>
 #include <types.h>
 #include <vnode.h>
-#include <vfs.h>
 #include <copyinout.h>
 #include <limits.h>
+#include <kern/errno.h>
+#include <current.h>
 
 int 
 sys_open (const char *filename, int flags, int *error)
@@ -41,7 +42,7 @@ sys_open (const char *filename, int flags, int *error)
 	}
 
 	// Create filetable entry
-	result = filetable_add(curproc->ft, vn, &fd);
+	result = filetable_add(curproc->p_ft, vn, &fd);
 	if (result) {
 		vfs_close(vn);
 		error = result;

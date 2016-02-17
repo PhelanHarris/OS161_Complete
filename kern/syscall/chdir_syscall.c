@@ -8,6 +8,7 @@
 #include <vfs.h>
 #include <limits.h>
 #include <copyinout.h>
+#include <current.h>
 
 int 
 sys_chdir (const char *pathname)

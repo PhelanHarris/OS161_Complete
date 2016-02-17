@@ -11,6 +11,7 @@
 #include <vfs.h>
 #include <limits.h>
 #include <stat.h>
+#include <current.h>
 
 off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  	struct file *f;
