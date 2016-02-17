@@ -5,18 +5,9 @@
 #ifndef _FILETABLE_H_
 #define _FILETABLE_H_
 
-#include <array.h>
 #include <types.h>
 #include <vnode.h>
 #include <synch.h>
-
-#ifndef FILETABLEINLINE
-#define FILETABLEINLINE INLINE
-#endif
-
-// Delcares struct filearray
-DECLARRAY(file, FILETABLEINLINE);
-DEFARRAY(file, FILETABLEINLINE);
 
 struct file {
 	struct vnode *f_vn;
@@ -27,17 +18,17 @@ struct file {
 };
 
 struct filetable {
-	struct file *ft_arr;
+	struct file **ft_arr;
 	struct lock *ft_lock;
 	unsigned ft_size;
 	unsigned ft_lastindex;
 };
 
 int filetable_create(struct filetable **ft_ret);
-int filetable_destroy(struct filetable *ft);
+void filetable_destroy(struct filetable *ft);
 int filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret);
 int filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret);
-int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned *fd_new);
+int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new);
 int filetable_remove(struct filetable *ft, unsigned fd);
 
 #endif /* _FILETABLE_H_ */

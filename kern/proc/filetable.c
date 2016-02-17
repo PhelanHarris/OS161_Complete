@@ -5,16 +5,20 @@
 #define FILETABLEINLINE
 
 #include <filetable.h>
+#include <vfs.h>
 #include <vnode.h>
+#include <limits.h>
 #include <spinlock.h>
 #include <kern/errno.h>
-#include <vfs.h>
+#include <kern/fcntl.h>
+
+unsigned getLowestIndex(struct filetable *ft);
 
 unsigned
 getLowestIndex(struct filetable *ft)
 {
 	unsigned i;
-	for (i = 0; i < MAX_OPEN; ++i)
+	for (i = 0; i < OPEN_MAX; ++i)
 		if (ft->ft_arr[i] == NULL) 
 			return i;
 	return -1;
@@ -25,12 +29,14 @@ filetable_create(struct filetable **ft_ret)
 {	
 	struct filetable *ft;
 	struct vnode *in_vn, *out_vn, *err_vn;
-	char *in_str = NULL, *out_str = NULL, *err_srt = NULL;
+	char *in_str = NULL, *out_str = NULL, *err_str = NULL;
 	int result;
+
+	(void) ft_ret;
 
 	// Init STDIN
 	in_str = kstrdup("con:");
-	result = vfs_open(in_str, O_RDONLY, 0, in_vn);
+	result = vfs_open(in_str, O_RDONLY, 0, &in_vn);
 	if (result) {
 		kfree(in_str);
 		vfs_close(in_vn);
@@ -39,7 +45,7 @@ filetable_create(struct filetable **ft_ret)
 	
 	// Init STDOUT
 	out_str = kstrdup("con:");
-	result = vfs_open(out_str, O_WRONLY, 0, out_vn);
+	result = vfs_open(out_str, O_WRONLY, 0, &out_vn);
 	if (result) {
 		kfree(in_str);
 		kfree(out_str);
@@ -50,7 +56,7 @@ filetable_create(struct filetable **ft_ret)
 
 	// Init STDERR
 	err_str = kstrdup("con:");
-	result = vfs_open(err_str, O_WRONLY, 0, err_vn);
+	result = vfs_open(err_str, O_WRONLY, 0, &err_vn);
 	if (result) {
 		kfree(in_str);
 		kfree(out_str);
@@ -62,40 +68,40 @@ filetable_create(struct filetable **ft_ret)
 	}
 
 	// Init structs
-	ft = kmalloc(sizeof(struct filetable));
-	ft->ft_arr = kmalloc(sizeof(struct file *)*MAX_OPEN);
+	ft = (struct filetable *) kmalloc(sizeof(struct filetable));
+	ft->ft_arr = (struct file **) kmalloc(sizeof(struct file *)*OPEN_MAX);
 	ft->ft_lock = lock_create("filetablelock");
 
 	// Add standard streams
 	result = filetable_add(ft, in_vn, NULL);
 	if (result) {
-		filetable_destory(ft);
+		filetable_destroy(ft);
 		return result;
 	}
 
 	result = filetable_add(ft, out_vn, NULL);
 	if (result) {
-		filetable_destory(ft);
+		filetable_destroy(ft);
 		return result;
 	}
 
 	result = filetable_add(ft, err_vn, NULL);
 	if (result) {
-		filetable_destory(ft);
+		filetable_destroy(ft);
 		return result;
 	}
 
-	ft_ret = ft;
+	ft_ret = &ft;
 	return 0;
 }
 
 void
-filetable_destory(struct filetable *ft)
+filetable_destroy(struct filetable *ft)
 {
 	unsigned i;
-	for (i = 0; i < MAX_OPEN; ++i) {
+	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
-			vps_close(ft_arr[i]->f_vn);
+			vfs_close(ft->ft_arr[i]->f_vn);
 			filetable_remove(ft, i);
 		}
 	}
@@ -107,7 +113,7 @@ filetable_destory(struct filetable *ft)
 int
 filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
 {
-	if (fd > MAX_OPEN) return EBADF;
+	if (fd > OPEN_MAX) return EBADF;
 	*f_ret = ft->ft_arr[fd];
 
 	return f_ret == NULL ? EBADF : 0;
@@ -119,22 +125,21 @@ filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
  * code and fd_ret will be null.
  */
 int
-filetable_add(struct filetable *ft, vnode *vn, unsigned *fd_ret)
+filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
 {
-	int result;
 	struct file *f;
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
 
 	// Reject if too many files open
-	if (ft->ft_size == MAX_OPEN) {
+	if (ft->ft_size == OPEN_MAX) {
 		lock_release(ft->ft_lock);
 		return EMFILE;
 	}
 	
 	// Create new file object
-	f = kmalloc(sizeof(struct file));
+	f = (struct file *) kmalloc(sizeof(struct file));
 	f->f_vn = vn;
 	f->f_mode = 0;
 	f->f_cursor = 0;
@@ -156,17 +161,16 @@ filetable_add(struct filetable *ft, vnode *vn, unsigned *fd_ret)
 int
 filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 {
-	int result;
 	struct file *f = NULL;
 
-	if (fd_old > MAX_OPEN || fd_new > MAX_OPEN) return EBADF;
+	if (fd_old > OPEN_MAX || fd_new > OPEN_MAX) return EBADF;
 	KASSERT(ft->ft_arr[fd_new] == NULL);
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
 
 	// Reject if too many files open
-	if (ft->ft_size == MAX_OPEN) {
+	if (ft->ft_size == OPEN_MAX) {
 		lock_release(ft->ft_lock);
 		return EMFILE;
 	}
@@ -179,7 +183,7 @@ filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 	}
 	
 	// Add new fd
-	f->refcount++;
+	f->f_refcount++;
 	ft->ft_arr[fd_new] = f;
 
 	lock_release(ft->ft_lock);
@@ -193,7 +197,7 @@ int
 filetable_remove(struct filetable *ft, unsigned fd) {
 	struct file *f = NULL;
 
-	if (fd > MAX_OPEN) return EBADF;
+	if (fd > OPEN_MAX) return EBADF;
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
