@@ -7,6 +7,7 @@
 #include <filetable.h>
 #include <vfs.h>
 #include <synch.h>
+#include <current.h>
 
 int 
 sys_close (int fd)
@@ -15,7 +16,7 @@ sys_close (int fd)
 	int result;
 
 	// Get filetable entry
-	result = filetable_get(curproc->ft, (unsigned) fd, &f);
+	result = filetable_get(curproc->p_ft, (unsigned) fd, &f);
 	if (result) {
 		return result;
 	}
