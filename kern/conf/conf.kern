@@ -331,6 +331,7 @@ file      thread/threadlist.c
 #
 
 file      proc/proc.c
+file      proc/filetable.c
 
 #
 # Virtual memory system
@@ -369,13 +370,21 @@ file      vfs/devnull.c
 
 #
 # System call layer
-# (You will probably want to add stuff here while doing the basic system
+# (You will probably wantper to add stuff here while doing the basic system
 # calls assignment.)
 #
 
 file      syscall/loadelf.c
 file      syscall/runprogram.c
 file      syscall/time_syscalls.c
+file      syscall/chdir_syscall.c
+file      syscall/closefile_syscall.c
+file      syscall/dup2_syscall.c
+file      syscall/getcwd_syscall.c
+file      syscall/lseek_syscall.c
+file      syscall/openfile_syscall.c
+file      syscall/read_syscall.c
+file      syscall/write_syscall.c
 
 #
 # Startup and initialization
