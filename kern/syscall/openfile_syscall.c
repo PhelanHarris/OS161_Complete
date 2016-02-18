@@ -39,7 +39,7 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	}
 
 	// Create filetable entry
-	result = filetable_add(curproc->p_ft, vn, (unsigned *) fd_ret);
+	result = filetable_add(curproc->p_ft, vn, (mode_t) flags, (unsigned *) fd_ret);
 	if (result) {
 		vfs_close(vn);
 		return result;

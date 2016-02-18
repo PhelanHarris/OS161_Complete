@@ -6,6 +6,7 @@
 #include <syscall.h>
 #include <filetable.h>
 #include <kern/errno.h>
+#include <kern/fcntl.h>
 #include <types.h>
 #include <vnode.h>
 #include <vfs.h>
@@ -24,6 +25,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
  	// get the file struct from the filetable
  	result = filetable_get(curproc->p_ft, fd, &f);
  	if (result) return result;
+ 	if (f->f_mode % 2) return EBADF;
 
  	// set up the uio for reading
  	i.iov_kbase = buf;
