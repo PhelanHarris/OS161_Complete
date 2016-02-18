@@ -9,7 +9,7 @@
 #include <uio.h>
 
 int
-sys___getcwd (char *buf, size_t buflen)
+sys___getcwd (char *buf, size_t buflen, int *len)
 {
   	struct iovec iov;
   	struct uio uio;
@@ -22,5 +22,6 @@ sys___getcwd (char *buf, size_t buflen)
 	if (result){
 		return result;
 	}
+	*len = uio.uio_offset;
 	return 0;
 }
