@@ -9,7 +9,7 @@
 #include <uio.h>
 
 int
-sys___getcwd (char *buf, size_t buflen, int *error)
+sys___getcwd (char *buf, size_t buflen)
 {
   	struct iovec iov;
   	struct uio uio;
@@ -20,8 +20,7 @@ sys___getcwd (char *buf, size_t buflen, int *error)
 	// Return result
 	result = vfs_getcwd(&uio);
 	if (result){
-		*error = result;
-		return -1;
+		return result;
 	}
-	return result;
+	return 0;
 }
