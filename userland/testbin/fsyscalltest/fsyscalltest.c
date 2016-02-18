@@ -99,6 +99,7 @@ test_dup2()
 	
 	dupfd = fd + 1;
 	rv = dup2(fd, dupfd);
+	printf("dup2 done\n");
 	if (rv<0) {
 		err(1, "%s: dup2", file);
 	}
@@ -108,16 +109,19 @@ test_dup2()
 	}
 
 	rv = write(dupfd, writebuf, 40);
+	printf("wrote to duplicated fd\n");
 	if (rv<0) {
 		err(1, "%s: write via duplicated fd", file);
 	}
 
 	rv = close(fd);
+	printf("closed original fd\n");
 	if (rv<0) {
 		err(1, "%s: close (original fd)", file);
 	}
 
 	rv = close(dupfd);
+	printf("closed duplicated fd\n");
 	if (rv<0) {
 		err(1, "%s: close (duplicate)", file);
 	}

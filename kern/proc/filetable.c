@@ -118,7 +118,7 @@ filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
 	if (fd > OPEN_MAX) return EBADF;
 	*f_ret = ft->ft_arr[fd];
 
-	return f_ret == NULL ? EBADF : 0;
+	return *f_ret == NULL ? EBADF : 0;
 }
 
 /*
