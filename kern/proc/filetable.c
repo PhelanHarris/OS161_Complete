@@ -228,8 +228,14 @@ filetable_remove(struct filetable *ft, unsigned fd) {
 	ft->ft_size--;
 
 
-	// Delete if refcount is 0 after decrement
+	// Close vnode and delete once refcount is 0
 	if (f->f_refcount == 0) {
+		// Close at vfs level
+		lock_acquire(f->f_lock);
+		vfs_close(f->f_vn);
+		lock_release(f->f_lock);
+
+		// Cleanup
 		lock_destroy(f->f_lock);
 		kfree(f);
 	}
