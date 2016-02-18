@@ -107,58 +107,55 @@ syscall(struct trapframe *tf)
 
 	switch (callno) {
 	    case SYS_reboot:
-		err = sys_reboot(tf->tf_a0);
-		break;
+			err = sys_reboot(tf->tf_a0);
+			break;
 
 	    case SYS___time:
-		err = sys___time((userptr_t)tf->tf_a0,
-				 (userptr_t)tf->tf_a1);
-		break;
-
-		 /* Add stuff here */
+			err = sys___time((userptr_t)tf->tf_a0, (userptr_t)tf->tf_a1);
+			break;
 
 		case SYS_open:
-		retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &err);
-		break;
+			retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &err);
+			break;
 
 		case SYS_read:
-		retval = sys_read((int)tf->tf_a0, (void*)tf->tf_a1, (size_t)tf->tf_a2, &err);
-		break;
+			retval = sys_read((int)tf->tf_a0, (void*)tf->tf_a1, (size_t)tf->tf_a2, &err);
+			break;
 
 		case SYS_write:
-		retval = sys_write((int)tf->tf_a0, (void*)tf->tf_a1, (size_t)tf->tf_a2, &err);
-		break;
+			retval = sys_write((int)tf->tf_a0, (void*)tf->tf_a1, (size_t)tf->tf_a2, &err);
+			break;
 
 		case SYS_lseek:
-		arg64 = ((off_t) tf->tf_a2 << 32 | tf->tf_a3);
-		copyin((const_userptr_t)(tf->tf_sp + 16), &arg4, sizeof(int));
-		retval64 = sys_lseek((int)tf->tf_a0, arg64, arg4, &err);
-		retval = retval64 >> 32;
-		retval2 = retval64 & 0x00000000FFFFFFFF;
-		if (!err)
-			tf->tf_v1 = retval2;
-		break;
+			arg64 = ((off_t) tf->tf_a2 << 32 | tf->tf_a3);
+			copyin((const_userptr_t)(tf->tf_sp + 16), &arg4, sizeof(int));
+			retval64 = sys_lseek((int)tf->tf_a0, arg64, arg4, &err);
+			retval = retval64 >> 32;
+			retval2 = retval64 & 0x00000000FFFFFFFF;
+			if (!err)
+				tf->tf_v1 = retval2;
+			break;
 
 		case SYS_close:
-		err = sys_close((int)tf->tf_a0);
-		break;
+			err = sys_close((int)tf->tf_a0);
+			break;
 
 		case SYS_dup2:
-		retval = sys_dup2((int)tf->tf_a0, (int)tf->tf_a1, &err);
-		break;
+			retval = sys_dup2((int)tf->tf_a0, (int)tf->tf_a1, &err);
+			break;
 
 		case SYS_chdir:
-		err = sys_chdir((const char*)tf->tf_a0);
-		break;
+			err = sys_chdir((const char*)tf->tf_a0);
+			break;
 
 		case SYS___getcwd:
-		retval = sys___getcwd((char*)tf->tf_a0, (size_t)tf->tf_a1, &err);
-		break;
+			retval = sys___getcwd((char*)tf->tf_a0, (size_t)tf->tf_a1, &err);
+			break;
 
 	    default:
-		kprintf("Unknown syscall %d\n", callno);
-		err = ENOSYS;
-		break;
+			kprintf("Unknown syscall %d\n", callno);
+			err = ENOSYS;
+			break;
 	}
 
 
