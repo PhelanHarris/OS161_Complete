@@ -12,12 +12,12 @@
 #include <limits.h>
 #include <kern/errno.h>
 #include <current.h>
+#include <proc.h>
 
 int 
 sys_open (const char *filename, int flags, int *error)
 {
 	struct vnode *vn;
-	struct file *f;
 	unsigned fd;
 	char *name_buffer;
 	size_t len;
@@ -29,7 +29,7 @@ sys_open (const char *filename, int flags, int *error)
 	result = copyinstr((const_userptr_t)filename, name_buffer, PATH_MAX, &len);
 	if (result) {
 		kfree(name_buffer);
-		error = result;
+		*error = result;
 		return -1;
 	}
 
@@ -37,7 +37,7 @@ sys_open (const char *filename, int flags, int *error)
 	result = vfs_open(name_buffer, flags, 0, &vn);
 	kfree(name_buffer);
 	if (result){
-		error = result;
+		*error = result;
 		return -1;
 	}
 
@@ -45,7 +45,7 @@ sys_open (const char *filename, int flags, int *error)
 	result = filetable_add(curproc->p_ft, vn, &fd);
 	if (result) {
 		vfs_close(vn);
-		error = result;
+		*error = result;
 		return -1;
 	}
 
