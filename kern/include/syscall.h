@@ -60,9 +60,9 @@ int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 
 int sys_open(const char *filename, int flags, int *error);
-ssize_t sys_read(int fd, void *buf, size_t buflen, int *error);
-ssize_t sys_write(int fd, void *buf, size_t nbytes, int *error);
-off_t sys_lseek(int fd, off_t pos, int whence, int *error);
+int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead);
+int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten);
+int sys_lseek(int fd, off_t pos, int whence, off_t *newCursor);
 int sys_close(int fd);
 int sys_dup2(int fd_old, int fd_new, int *error);
 int sys_chdir(const char *pathname);

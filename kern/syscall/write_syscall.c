@@ -14,15 +14,15 @@
 #include <current.h>
 #include <proc.h>
 
-ssize_t sys_write(int fd, void *buf, size_t nbytes, int *error){
+int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten){
  	struct file *f;
  	struct uio u;
  	struct iovec i;
- 	*error = 0;
+ 	int result;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, &f);
- 	if (*error) return -1;
+ 	result = filetable_get(curproc->p_ft, fd, &f);
+ 	if (result) return result;
 
  	// set up the uio for writing
  	i.iov_kbase = buf;
@@ -37,12 +37,12 @@ ssize_t sys_write(int fd, void *buf, size_t nbytes, int *error){
 
 	// acquire lock and do the write
 	lock_acquire(f->f_lock);
-	*error = VOP_WRITE(f->f_vn, &u);
-	ssize_t bytesWritten = u.uio_offset - f->f_cursor;
+	result = VOP_WRITE(f->f_vn, &u);
+	*bytesWritten = u.uio_offset - f->f_cursor;
 	f->f_cursor = u.uio_offset;
 	lock_release(f->f_lock);
 
-	if (*error) return -1;
+	if (result) return result;
 
-	return bytesWritten;
+	return 0;
 }

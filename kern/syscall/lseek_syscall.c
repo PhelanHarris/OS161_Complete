@@ -15,36 +15,33 @@
 #include <current.h>
 #include <proc.h>
 
-off_t sys_lseek(int fd, off_t pos, int whence, int *error){
+int sys_lseek(int fd, off_t pos, int whence, off_t *newCursor){
  	struct file *f;
  	struct stat stat;
- 	*error = 0;
+ 	int result;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, &f);
- 	if (*error) return -1;
+ 	result = filetable_get(curproc->p_ft, fd, &f);
+ 	if (result) return result;
 
  	lock_acquire(f->f_lock);
- 	off_t newCursor;
  	if (whence == SEEK_SET){
- 		newCursor = pos;
+ 		*newCursor = pos;
  	}
  	else if (whence == SEEK_CUR){
- 		newCursor = f->f_cursor + pos;
+ 		*newCursor = f->f_cursor + pos;
  	}
  	else if (whence == SEEK_END){
  		VOP_STAT(f->f_vn, &stat);
- 		newCursor = stat.st_size + pos;
+ 		*newCursor = stat.st_size + pos;
  	}
  	else{
  		lock_release(f->f_lock);
- 		*error = EINVAL;
- 		return -1;
+ 		return EINVAL;
  	}
 
- 	if (newCursor < 0){
- 		*error = EINVAL;
- 		return -1;
+ 	if (*newCursor < 0){
+ 		return EINVAL;
  	}
- 	return newCursor;
+ 	return 0;
 }

@@ -15,15 +15,15 @@
 #include <current.h>
 #include <proc.h>
 
-ssize_t sys_read(int fd, void *buf, size_t buflen, int *error){
+int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
  	struct file *f;
  	struct uio u;
  	struct iovec i;
- 	*error = 0;
+ 	int result;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, &f);
- 	if (*error) return -1;
+ 	result = filetable_get(curproc->p_ft, fd, &f);
+ 	if (result) return result;
 
  	// set up the uio for reading
  	i.iov_kbase = buf;
@@ -38,13 +38,12 @@ ssize_t sys_read(int fd, void *buf, size_t buflen, int *error){
 
 	// acquire the lock and do the read
 	lock_acquire(f->f_lock);
-	*error = VOP_READ(f->f_vn, &u);
-	ssize_t bytesRead = u.uio_offset - f->f_cursor;
+	result = VOP_READ(f->f_vn, &u);
+	*bytesRead = u.uio_offset - f->f_cursor;
 	f->f_cursor = u.uio_offset;
 	lock_release(f->f_lock);
 
-	if (*error) return -1;
+	if (result) return result;
 
-	return bytesRead;
-
+	return 0;
 }
