@@ -17,7 +17,7 @@
 
 off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  	struct file *f;
- 	struct stat f_stat;
+ 	struct stat stat;
  	*error = 0;
 
  	// get the file struct from the filetable
@@ -33,8 +33,8 @@ off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  		newCursor = f->f_cursor + pos;
  	}
  	else if (whence == SEEK_END){
- 		VOP_STAT(f->f_vn, f_stat);
- 		newCursor = f_stat->st_size + pos;
+ 		VOP_STAT(f->f_vn, &stat);
+ 		newCursor = stat.st_size + pos;
  	}
  	else{
  		lock_release(f->f_lock);
