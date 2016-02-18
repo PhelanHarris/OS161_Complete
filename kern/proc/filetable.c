@@ -12,12 +12,12 @@
 #include <kern/errno.h>
 #include <kern/fcntl.h>
 
-unsigned getLowestIndex(struct filetable *ft);
+int getLowestIndex(struct filetable *ft);
 
-unsigned
+int
 getLowestIndex(struct filetable *ft)
 {
-	unsigned i;
+	int i;
 	for (i = 0; i < OPEN_MAX; ++i)
 		if (ft->ft_arr[i] == NULL) 
 			return i;
@@ -31,6 +31,7 @@ filetable_create(struct filetable **ft_ret)
 	struct vnode *in_vn, *out_vn, *err_vn;
 	char *in_str = NULL, *out_str = NULL, *err_str = NULL;
 	int result;
+	unsigned i;
 
 	(void) ft_ret;
 
@@ -70,22 +71,28 @@ filetable_create(struct filetable **ft_ret)
 	// Init structs
 	ft = (struct filetable *) kmalloc(sizeof(struct filetable));
 	ft->ft_arr = (struct file **) kmalloc(sizeof(struct file *)*OPEN_MAX);
+	for (i = 0; i < OPEN_MAX; i++){
+		ft->ft_arr[i] = NULL;
+	}
+
 	ft->ft_lock = lock_create("filetablelock");
+	ft->ft_size = 0;
 
 	// Add standard streams
-	result = filetable_add(ft, in_vn, NULL);
+	unsigned fd_ret = 0;
+	result = filetable_add(ft, in_vn, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
 	}
 
-	result = filetable_add(ft, out_vn, NULL);
+	result = filetable_add(ft, out_vn, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
 	}
 
-	result = filetable_add(ft, err_vn, NULL);
+	result = filetable_add(ft, err_vn, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
@@ -137,6 +144,16 @@ filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
 		lock_release(ft->ft_lock);
 		return EMFILE;
 	}
+
+	int result = getLowestIndex(ft);
+	kprintf("result: %d\n", result);
+	if (result == -1){
+		KASSERT(result != -1);
+		lock_release(ft->ft_lock);
+		return EMFILE;
+	}
+	*fd_ret = (unsigned) result;
+
 	
 	// Create new file object
 	f = (struct file *) kmalloc(sizeof(struct file));
@@ -147,9 +164,10 @@ filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
 	f->f_lock = lock_create("filelock"); // name is not important
 
 	// Add file object to filetable
-	*fd_ret = getLowestIndex(ft);
+
 	ft->ft_arr[*fd_ret] = f;
 
+	ft->ft_size++;
 	lock_release(ft->ft_lock);
 	return 0;
 }
@@ -186,6 +204,7 @@ filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 	f->f_refcount++;
 	ft->ft_arr[fd_new] = f;
 
+	ft->ft_size++;
 	lock_release(ft->ft_lock);
 	return 0;
 }
@@ -212,6 +231,8 @@ filetable_remove(struct filetable *ft, unsigned fd) {
 	// Remove fd
 	ft->ft_arr[fd] = NULL;
 	f->f_refcount--;
+	ft->ft_size--;
+
 
 	// Delete if refcount is 0 after decrement
 	if (f->f_refcount == 0) {

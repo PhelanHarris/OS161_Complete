@@ -118,6 +118,7 @@ syscall(struct trapframe *tf)
 		 /* Add stuff here */
 
 		case SYS_open:
+		kprintf("a0: %s, a1: %d\n", (const char*) tf->tf_a0, (int) tf->tf_a1);
 		retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &err);
 		break;
 
