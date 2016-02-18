@@ -40,8 +40,12 @@ int sys_lseek(int fd, off_t pos, int whence, off_t *newCursor){
  		return EINVAL;
  	}
 
+ 	f->f_cursor = *newCursor;
+ 	lock_release(f->f_lock);
+
  	if (*newCursor < 0){
  		return EINVAL;
  	}
+
  	return 0;
 }
