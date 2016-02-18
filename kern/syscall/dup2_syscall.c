@@ -9,19 +9,15 @@
 #include <proc.h>
 
 int 
-sys_dup2 (int fd_old, int fd_new, int *error)
+sys_dup2 (int fd_old, int fd_new)
 {
-	*error = 0;
-	*error = sys_close(fd_new);
-	if (*error){
-		return -1;
-	}
+	int result;
+	result = sys_close(fd_new);
+	if (result) return result;
 
 	
-	*error = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
-	if (*error){
-		return -1;
-	}
+	result = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
+	if (result) return result;
 
-	return fd_new;
+	return 0;
 }
