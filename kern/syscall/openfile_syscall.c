@@ -15,7 +15,7 @@
 #include <proc.h>
 
 int 
-sys_open (const char *filename, int flags, int *fd_ret)
+sys_open (const char *filename, int flags, mode_t mode, int *fd_ret)
 {
 	struct vnode *vn;
 	char *name_buffer;
@@ -31,7 +31,7 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	}
 
 	// Open file
-	result = vfs_open(name_buffer, flags, 0, &vn);
+	result = vfs_open(name_buffer, flags, mode, &vn);
 	kfree(name_buffer);
 	if (result) {
 		vfs_close(vn);
@@ -39,7 +39,7 @@ sys_open (const char *filename, int flags, int *fd_ret)
 	}
 
 	// Create filetable entry
-	result = filetable_add(curproc->p_ft, vn, (mode_t) flags, (unsigned *) fd_ret);
+	result = filetable_add(curproc->p_ft, vn, mode, (unsigned *) fd_ret);
 	if (result) {
 		vfs_close(vn);
 		return result;
