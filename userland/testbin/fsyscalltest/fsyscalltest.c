@@ -340,6 +340,7 @@ dir_test()
 {
 	char chdir_name[] = "testbin";
 	char buf[NAME_MAX+1];
+	char buf2[NAME_MAX+1];
 	int ret;
 
 	_getcwd(buf, NAME_MAX);
@@ -350,6 +351,9 @@ dir_test()
 	{
 		err(1, "chdir into %s", chdir_name);
 	}
+
+	_getcwd(buf2, NAME_MAX);
+	printf("__getcwd returned: %s\n", buf2);
 }
 			
 
