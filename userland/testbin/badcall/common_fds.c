@@ -177,11 +177,13 @@ runtest(int (*func)(int fd), void (*cleanup)(void), const char *callname,
 	any_badfd(func, cleanup, callname, IMPOSSIBLE_FD, "impossible fd");
 
 	/* test for off-by-one errors */
+	printf("TRYING FD OPEN_MAX\n");
 #ifdef OPEN_MAX
 	any_badfd(func, cleanup, callname, OPEN_MAX, "fd OPEN_MAX");
 #else
 	warnx("Warning: OPEN_MAX not defined, test skipped");
 #endif
+	printf("FAILED FD OPEN_MAX\n");
 
 	if (rw == RW_TEST_RDONLY) {
 		fd = reopen_testfile(O_RDONLY|O_CREAT);

@@ -8,6 +8,7 @@
 #include <vfs.h>
 #include <vnode.h>
 #include <limits.h>
+#include <types.h>
 #include <spinlock.h>
 #include <kern/errno.h>
 #include <kern/fcntl.h>
@@ -76,19 +77,19 @@ filetable_init(struct filetable *ft)
 
 	// Add standard streams
 	unsigned fd_ret = 0;
-	result = filetable_add(ft, in_vn, &fd_ret);
+	result = filetable_add(ft, in_vn, O_RDONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
 	}
 
-	result = filetable_add(ft, out_vn, &fd_ret);
+	result = filetable_add(ft, out_vn, O_WRONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
 	}
 
-	result = filetable_add(ft, err_vn, &fd_ret);
+	result = filetable_add(ft, err_vn, O_WRONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
 		return result;
@@ -115,7 +116,7 @@ filetable_destroy(struct filetable *ft)
 int
 filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
 {
-	if (fd > OPEN_MAX) return EBADF;
+	if (fd >= OPEN_MAX) return EBADF;
 	*f_ret = ft->ft_arr[fd];
 
 	return *f_ret == NULL ? EBADF : 0;
@@ -127,7 +128,7 @@ filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
  * code and fd_ret will be null.
  */
 int
-filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
+filetable_add(struct filetable *ft, struct vnode *vn, mode_t mode, unsigned *fd_ret)
 {
 	struct file *f;
 
@@ -152,7 +153,7 @@ filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
 	// Create new file object
 	f = (struct file *) kmalloc(sizeof(struct file));
 	f->f_vn = vn;
-	f->f_mode = 0;
+	f->f_mode = mode;
 	f->f_cursor = 0;
 	f->f_refcount = 1;
 	f->f_lock = lock_create("filelock"); // name is not important
@@ -210,7 +211,7 @@ int
 filetable_remove(struct filetable *ft, unsigned fd) {
 	struct file *f = NULL;
 
-	if (fd > OPEN_MAX) return EBADF;
+	if (fd >= OPEN_MAX) return EBADF;
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
