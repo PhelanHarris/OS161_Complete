@@ -13,7 +13,7 @@
 
 struct file {
 	struct vnode *f_vn;
-	mode_t f_mode;
+	int f_flags;
 	off_t f_cursor;
 	int f_refcount;
 	struct lock *f_lock; 
@@ -28,7 +28,7 @@ struct filetable {
 int filetable_init(struct filetable *ft);
 void filetable_destroy(struct filetable *ft);
 int filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret);
-int filetable_add(struct filetable *ft, struct vnode *vn, mode_t mode, unsigned *fd_ret);
+int filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_ret);
 int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new);
 int filetable_remove(struct filetable *ft, unsigned fd);
 

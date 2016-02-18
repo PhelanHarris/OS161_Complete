@@ -128,7 +128,7 @@ filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
  * code and fd_ret will be null.
  */
 int
-filetable_add(struct filetable *ft, struct vnode *vn, mode_t mode, unsigned *fd_ret)
+filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_ret)
 {
 	struct file *f;
 
@@ -153,7 +153,7 @@ filetable_add(struct filetable *ft, struct vnode *vn, mode_t mode, unsigned *fd_
 	// Create new file object
 	f = (struct file *) kmalloc(sizeof(struct file));
 	f->f_vn = vn;
-	f->f_mode = mode;
+	f->f_flags = flags;
 	f->f_cursor = 0;
 	f->f_refcount = 1;
 	f->f_lock = lock_create("filelock"); // name is not important
