@@ -12,7 +12,7 @@ int
 sys___getcwd (char *buf, size_t buflen, int *error)
 {
   	struct iovec iov;
-  	struct uio uio;
+  	struct uio u;
   	int result;
 
 	// Create uio for data transfer
