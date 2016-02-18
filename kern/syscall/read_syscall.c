@@ -34,7 +34,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
 	u.uio_resid = buflen;
 	u.uio_segflg = UIO_USERSPACE;
 	u.uio_rw = UIO_READ;
-	u.uio_space = NULL;
+	u.uio_space = proc_getas();
 
 	// acquire the lock and do the read
 	lock_acquire(f->f_lock);
