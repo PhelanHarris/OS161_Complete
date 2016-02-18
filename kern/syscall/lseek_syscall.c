@@ -21,7 +21,7 @@ off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  	*error = 0;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, &f);
+ 	*error = filetable_get(&curproc->p_ft, fd, &f);
  	if (*error) return -1;
 
  	lock_acquire(f->f_lock);

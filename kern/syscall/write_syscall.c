@@ -21,7 +21,7 @@ ssize_t sys_write(int fd, void *buf, size_t nbytes, int *error){
  	*error = 0;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, &f);
+ 	*error = filetable_get(&curproc->p_ft, fd, &f);
  	if (*error) return -1;
 
  	// set up the uio for writing

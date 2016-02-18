@@ -92,11 +92,11 @@ runprogram(char *progname)
 	vfs_close(v);
 
 	/* Define filetable */
-	result = filetable_create(&curproc->p_ft);
-	if (result) {
+	//result = filetable_create(&curproc->p_ft);
+	//if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-		return result;
-	}
+	//	return result;
+	//}
 
 	/* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);

@@ -25,7 +25,7 @@ getLowestIndex(struct filetable *ft)
 }
 
 int
-filetable_create(struct filetable **ft_ret)
+filetable_create(struct filetable *ft_ret)
 {	
 	struct filetable *ft;
 	struct vnode *in_vn, *out_vn, *err_vn;
@@ -98,7 +98,7 @@ filetable_create(struct filetable **ft_ret)
 		return result;
 	}
 
-	ft_ret = &ft;
+	ft_ret = ft;
 	return 0;
 }
 

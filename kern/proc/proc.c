@@ -204,6 +204,8 @@ proc_create_runprogram(const char *name)
 	newproc->p_addrspace = NULL;
 
 	/* VFS fields */
+	int result = filetable_create(&newproc->p_ft);
+	KASSERT(!result);
 
 	/*
 	 * Lock the current process to copy its current directory.
