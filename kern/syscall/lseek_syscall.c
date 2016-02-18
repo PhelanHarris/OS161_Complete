@@ -6,12 +6,14 @@
 #include <syscall.h>
 #include <filetable.h>
 #include <kern/errno.h>
+#include <kern/seek.h>
 #include <types.h>
 #include <vnode.h>
 #include <vfs.h>
 #include <limits.h>
 #include <stat.h>
 #include <current.h>
+#include <proc.h>
 
 off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  	struct file *f;
@@ -19,7 +21,7 @@ off_t sys_lseek(int fd, off_t pos, int whence, int *error){
  	*error = 0;
 
  	// get the file struct from the filetable
- 	*error = filetable_get(curproc->p_ft, fd, f);
+ 	*error = filetable_get(curproc->p_ft, fd, &f);
  	if (*error) return -1;
 
  	lock_acquire(f->f_lock);
