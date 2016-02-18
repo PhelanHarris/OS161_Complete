@@ -25,7 +25,7 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
  	// get the file struct from the filetable
  	result = filetable_get(curproc->p_ft, fd, &f);
  	if (result) return result;
- 	if (f->f_flags & O_WRONLY) return EBADF;
+ 	//if (f->f_flags & O_WRONLY) return EBADF;
 
  	// set up the uio for reading
  	i.iov_kbase = buf;
