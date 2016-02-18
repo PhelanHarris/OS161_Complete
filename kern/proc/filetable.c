@@ -149,7 +149,6 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 	}
 	*fd_ret = (unsigned) result;
 
-	
 	// Create new file object
 	f = (struct file *) kmalloc(sizeof(struct file));
 	f->f_vn = vn;
@@ -159,7 +158,6 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 	f->f_lock = lock_create("filelock"); // name is not important
 
 	// Add file object to filetable
-
 	ft->ft_arr[*fd_ret] = f;
 
 	ft->ft_size++;
