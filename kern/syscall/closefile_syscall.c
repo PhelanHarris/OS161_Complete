@@ -8,6 +8,7 @@
 #include <vfs.h>
 #include <synch.h>
 #include <current.h>
+#include <proc.h>
 
 int 
 sys_close (int fd)
@@ -27,6 +28,6 @@ sys_close (int fd)
 	lock_release(f->f_lock);
 
 	// Remove filetable entry
-	filetable_remove(curproc->ft, (unsigned) fd);
+	filetable_remove(curproc->p_ft, (unsigned) fd);
 	return 0;
 }

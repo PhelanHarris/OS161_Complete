@@ -5,20 +5,20 @@
 
 #include <syscall.h>
 #include <filetable.h>
+#include <current.h>
+#include <proc.h>
 
 int 
 sys_dup2 (int fd_old, int fd_new, int *error)
 {
-	int result;
-	error = 0;
-	result = sys_close(fd_new, &error);
-	if (result){
-		return result;
+	*error = 0;
+	*error = sys_close(fd_new);
+	if (*error){
+		return -1;
 	}
 
-	result = filetable_clone(curproc->ft, (unsigned) fd_old, (unsigned) fd_new);
-	if (result){
-		error = result;
+	*error = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
+	if (*error){
 		return -1;
 	}
 
