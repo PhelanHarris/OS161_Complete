@@ -115,8 +115,7 @@ syscall(struct trapframe *tf)
 			break;
 
 		case SYS_open:
-			kprintf("a0: %s, a1: %d\n", (const char*) tf->tf_a0, (int) tf->tf_a1);
-			retval = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &err);
+			err = sys_open((const char*)tf->tf_a0, (int)tf->tf_a1, &retval);
 			break;
 
 		case SYS_read:
@@ -151,6 +150,11 @@ syscall(struct trapframe *tf)
 
 		case SYS___getcwd:
 			retval = sys___getcwd((char*)tf->tf_a0, (size_t)tf->tf_a1, &err);
+			break;
+
+	    case SYS__exit:
+			kprintf("SYS__EXIT CALLED (not implemented)\n\n");
+			err = ENOSYS;
 			break;
 
 	    default:

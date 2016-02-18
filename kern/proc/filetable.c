@@ -141,7 +141,6 @@ filetable_add(struct filetable *ft, struct vnode *vn, unsigned *fd_ret)
 	}
 
 	int result = getLowestIndex(ft);
-	kprintf("result: %d\n", result);
 	if (result == -1){
 		KASSERT(result != -1);
 		lock_release(ft->ft_lock);

@@ -33,7 +33,7 @@ ssize_t sys_write(int fd, void *buf, size_t nbytes, int *error){
 	u.uio_resid = nbytes;
 	u.uio_segflg = UIO_USERSPACE;
 	u.uio_rw = UIO_WRITE;
-	u.uio_space = NULL;
+	u.uio_space = proc_getas();
 
 	// acquire lock and do the write
 	lock_acquire(f->f_lock);

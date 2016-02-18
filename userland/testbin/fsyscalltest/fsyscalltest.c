@@ -179,6 +179,7 @@ test_openfile_limits()
 	for(i = 0; i < (OPEN_MAX-3); i++)
 	{
 		fd = open(file, O_RDWR|O_CREAT|O_TRUNC, 0664);
+		printf("TEST_OPENFILE_LIMITS: fd = %d\n", fd);
 		if (fd<0)
 			err(1, "%s: open for %dth time", file, (i+1));
 

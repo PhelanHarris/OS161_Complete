@@ -15,39 +15,35 @@
 #include <proc.h>
 
 int 
-sys_open (const char *filename, int flags, int *error)
+sys_open (const char *filename, int flags, int *fd_ret)
 {
 	struct vnode *vn;
-	unsigned fd;
 	char *name_buffer;
 	size_t len;
 	int result;
-	error = 0;
 
 	// Copy filename locally
 	name_buffer = (char *) kmalloc(sizeof(char)*PATH_MAX);
 	result = copyinstr((const_userptr_t)filename, name_buffer, PATH_MAX, &len);
 	if (result) {
 		kfree(name_buffer);
-		*error = result;
-		return -1;
+		return result;
 	}
 
 	// Open file
 	result = vfs_open(name_buffer, flags, 0, &vn);
 	kfree(name_buffer);
-	if (result){
-		*error = result;
-		return -1;
+	if (result) {
+		vfs_close(vn);
+		return result;
 	}
 
 	// Create filetable entry
-	result = filetable_add(curproc->p_ft, vn, &fd);
+	result = filetable_add(curproc->p_ft, vn, (unsigned *) fd_ret);
 	if (result) {
 		vfs_close(vn);
-		*error = result;
-		return -1;
+		return result;
 	}
 
-	return fd;
+	return 0;
 }
