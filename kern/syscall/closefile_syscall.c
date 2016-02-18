@@ -17,7 +17,6 @@ sys_close (int fd)
 	int result;
 
 	// Get filetable entry
-	kprintf("Curproc: %s", curproc->p_name);
 	result = filetable_get(curproc->p_ft, (unsigned) fd, &f);
 	if (result) {
 		return result;
