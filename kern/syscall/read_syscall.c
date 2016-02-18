@@ -11,6 +11,7 @@
 #include <vfs.h>
 #include <copyinout.h>
 #include <limits.h>
+#include <current.h>
 
 ssize_t sys_read(int fd, void *buf, size_t buflen, int *error){
  	struct file *f;

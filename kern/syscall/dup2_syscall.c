@@ -17,6 +17,7 @@ sys_dup2 (int fd_old, int fd_new, int *error)
 		return -1;
 	}
 
+	
 	*error = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
 	if (*error){
 		return -1;
