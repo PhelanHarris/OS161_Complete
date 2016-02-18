@@ -48,6 +48,7 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
+#include <filetable.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -204,7 +205,8 @@ proc_create_runprogram(const char *name)
 	newproc->p_addrspace = NULL;
 
 	/* VFS fields */
-	int result = filetable_create(&newproc->p_ft);
+	newproc->p_ft = (struct filetable *) kmalloc(sizeof(struct filetable));
+	int result = filetable_init(newproc->p_ft);
 	KASSERT(!result);
 
 	/*

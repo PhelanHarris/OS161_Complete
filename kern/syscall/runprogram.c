@@ -44,7 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
-#include <filetable.h>
+//#include <filetable.h>
 
 /*
  * Load program "progname" and start running it in usermode.

@@ -42,7 +42,7 @@ sys_open (const char *filename, int flags, int *error)
 	}
 
 	// Create filetable entry
-	result = filetable_add(&curproc->p_ft, vn, &fd);
+	result = filetable_add(curproc->p_ft, vn, &fd);
 	if (result) {
 		vfs_close(vn);
 		*error = result;
