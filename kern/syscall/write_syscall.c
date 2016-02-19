@@ -24,7 +24,7 @@ int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten){
  	// get the file struct from the filetable
  	result = filetable_get(curproc->p_ft, fd, &f);
  	if (result) return result;
- 	//if (!(f->f_flags & O_WRONLY) || !(f->f_flags & O_RDWR)) return EBADF;
+ 	if ((f->f_flags & O_ACCMODE) != O_WRONLY && (f->f_flags & O_ACCMODE) != O_RDWR) return EBADF;
 
  	// set up the uio for writing
  	i.iov_kbase = buf;
