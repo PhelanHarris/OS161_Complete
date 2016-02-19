@@ -179,7 +179,6 @@ test_openfile_limits()
 	for(i = 0; i < (OPEN_MAX-3); i++)
 	{
 		fd = open(file, O_RDWR|O_CREAT|O_TRUNC, 0664);
-		printf("FILE OPENED %d TIMES FD %d\n", i, fd);
 		if (fd<0)
 			err(1, "%s: open for %dth time", file, (i+1));
 
@@ -341,7 +340,6 @@ dir_test()
 {
 	char chdir_name[] = "testbin";
 	char buf[NAME_MAX+1];
-	char buf2[NAME_MAX+1];
 	int ret;
 
 	_getcwd(buf, NAME_MAX);
@@ -352,9 +350,6 @@ dir_test()
 	{
 		err(1, "chdir into %s", chdir_name);
 	}
-
-	_getcwd(buf2, NAME_MAX);
-	printf("__getcwd returned: %s\n", buf2);
 }
 			
 

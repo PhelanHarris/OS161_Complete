@@ -99,6 +99,7 @@ main(int argc, char *argv[])
 		errx(1, "Buffer data mismatch!");
 	}
 
+	printf("Got to remove.\n");
 	rv = remove(file);
 	if (rv<0) {
 		err(1, "%s: remove", file);
