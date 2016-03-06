@@ -2,8 +2,6 @@
  * Filetable Implementation
  */
 
-#define FILETABLEINLINE
-
 #include <filetable.h>
 #include <vfs.h>
 #include <vnode.h>
