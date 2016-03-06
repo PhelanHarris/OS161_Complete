@@ -1,18 +1,15 @@
 #include <proctable.h>
 #include <proc.h>
-#include <array.h>
 
-void proctable_cleanup (struct array *pt);
+void proctable_cleanup (struct proctable *pt);
 
-void
-proctable_init (struct array *pt) 
-{
-
+struct proctable *
+proctable_create () {
+	pt->num = pt->max = 0;
 }
 
-pid_t
-proctable_add (struct array *pt, proc* p) 
-{
+int
+proctable_add (struct proctable *pt, proc* p) {
 	int i;
 	for (i = 2; i < pt->num; i++) {
 		if (pt->v[i] == NULL) {
@@ -23,14 +20,13 @@ proctable_add (struct array *pt, proc* p)
 }
 
 void
-proctable_remove (struct array *pt, pid_t pid) 
-{
+proctable_remove (struct proctable *pt, int pid) {
 	pt->v[pid] = NULL;
 	proctable_cleanup(pt);
 }
 
 void 
-proctable_cleanup (struct array *pt)
+proctable_cleanup (struct proctable *pt)
 {
 	int i = pt->num - 1;
 	while (pt->v[i] = NULL){
