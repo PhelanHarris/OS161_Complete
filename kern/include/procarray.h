@@ -1,8 +1,10 @@
 #ifndef _PROCARRAY_H_
 #define _PROCARRAY_H_
 
-void initProcArray();
-int addProc(proc* p);
-void removeProc(int pid);
+#include <proc.h>
+
+void proctable_init();
+int proctable_add(proc* p);
+void proctable_remove(int pid);
 
 #endif /* _PROCARRAY_H_ */
