@@ -2,16 +2,16 @@
 #include <proc.h>
 
 void
-proctable_init () {
+proctable_init (struct array *pt) {
 
 }
 
 int
-proctable_add (proc* p) {
+proctable_add (struct array *pt, proc* p) {
 
 }
 
 void
-proctable_remove (int pid) {
+proctable_remove (struct array *pt, int pid) {
 	
 }
