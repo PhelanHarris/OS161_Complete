@@ -1,5 +1,6 @@
-#include <proctable.h>
-#include <proc.h>
+//#include <proctable.h>
+//#include <proc.h>
+//#include <types.h>
 
 void proctable_cleanup (struct proctable *pt);
 int proctable_preallocate(struct proctable *pt, unsigned num);
@@ -12,7 +13,7 @@ proctable_create () {
 
 	pt = kmalloc(sizeof(*pt));
 	if (pt != NULL) {
-		pt->size = pt->num = pt->max = 0;
+		pt->size = pt->num = 0;
 		pt->v = NULL;
 	}
 	return pt;
@@ -71,30 +72,22 @@ int
 proctable_preallocate(struct proctable *pt, unsigned num)
 {
 	void **newptr;
-	unsigned newmax;
+	unsigned newSize;
 
-	if (num > pt->max) {
-		/* Don't touch A until the allocation succeeds. */
-		newmax = pt->max;
-		while (num > newmax) {
-			newmax = newmax ? newmax*2 : 4;
+	if (num > pt->size) {
+		newSize = pt->size;
+		while (num > newSize) {
+			newSize = newSize ? newSize*2 : 4;
 		}
 
-		/*
-		 * We don't have krealloc, and it wouldn't be
-		 * worthwhile to implement just for this. So just
-		 * allocate a new block and copy. (Exercise: what
-		 * about this and/or kmalloc makes it not worthwhile?)
-		 */
-
-		newptr = kmalloc(newmax*sizeof(*pt->v));
+		newptr = kmalloc(newSize*sizeof(*pt->v));
 		if (newptr == NULL) {
 			return ENOMEM;
 		}
 		memcpy(newptr, pt->v, pt->num*sizeof(*pt->v));
 		kfree(pt->v);
 		pt->v = newptr;
-		pt->max = newmax;
+		pt->size = newSize;
 	}
 	return 0;
 }
