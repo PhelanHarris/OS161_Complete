@@ -10,6 +10,6 @@ struct proctable {
 
 struct proctable * proctable_create(void);
 pid_t proctable_add(struct proctable *pt, proc* p);
-void proctable_remove(struct proctable *pt, pid_t pid);
+int proctable_remove(struct proctable *pt, pid_t pid);
 
 #endif /* _PROCARRAY_H_ */

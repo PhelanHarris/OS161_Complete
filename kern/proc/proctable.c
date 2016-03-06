@@ -8,8 +8,14 @@ int proctable_setsize(struct proctable *pt, unsigned num);
 
 struct proctable *
 proctable_create () {
-	pt->size = pt->num = pt->max = 0;
-	pt->v = NULL;
+	struct proctable *pt;
+
+	pt = kmalloc(sizeof(*pt));
+	if (pt != NULL) {
+		pt->size = pt->num = pt->max = 0;
+		pt->v = NULL;
+	}
+	return pt;
 }
 
 int
@@ -26,19 +32,27 @@ proctable_add (struct proctable *pt, proc* p) {
 	}
 }
 
-void
+int
 proctable_remove (struct proctable *pt, int pid) {
 	pt->v[pid] = NULL;
 	pt->num--;
-	proctable_cleanup(pt);
+	return proctable_cleanup(pt);
 }
 
-void 
+int 
 proctable_cleanup (struct proctable *pt)
 {
+	int newSize = pt->size
 	int i = pt->num - 1;
 	while (pt->v[i] = NULL){
-		
+		i--;
+		newSize--;
+	}
+
+	if (newSize != pt->size) {
+		return proctable_setsize(pt, newSize);
+	} else {
+		return 0;
 	}
 }
 
