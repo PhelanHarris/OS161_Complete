@@ -13,17 +13,28 @@ proctable_create () {
 }
 
 int
-proctable_add (struct proctable *pt, proc* p) {
-	proctable_setsize(pt, pt->num+1);
+proctable_add (struct proctable *pt, proc* p, pid_t *pid) {
+	pt->num++;
+	
+	int ret = 0;
+	if (pt->num > pt->size){
+		ret = proctable_setsize(pt, pt->num);
+		if (ret)
+			return ret;
+		*pid = pt->num - 1;
+		pt->v[*pid] = p;
+		return 0;
+	}
 
 	int i;
-	for (i = 2; i < pt->num; i++) {
+	for (i = 2; i < pt->size; i++) {
 		if (pt->v[i] == NULL) {
 			pt->v[i] = p;
-			pt-num++;
-			return i;
+			*pid = i;
+			return 0;
 		}
 	}
+
 }
 
 void
