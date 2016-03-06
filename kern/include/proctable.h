@@ -5,7 +5,7 @@
 
 struct proctable {
 	proc **v;
-	unsigned num, max;
+	unsigned num, size, max;
 };
 
 struct proctable * proctable_create(void);
