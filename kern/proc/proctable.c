@@ -55,7 +55,7 @@ proctable_cleanup (struct proctable *pt)
 {
 	int newSize = pt->size
 	int i = pt->num - 1;
-	while (pt->v[i] = NULL){
+	while (pt->v[i] == NULL){
 		i--;
 		newSize--;
 	}
