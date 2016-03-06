@@ -53,7 +53,7 @@ proctable_remove (struct proctable *pt, int pid) {
 int 
 proctable_cleanup (struct proctable *pt)
 {
-	int newSize = pt->size
+	int newSize = pt->size;
 	int i = pt->num - 1;
 	while (pt->v[i] == NULL){
 		i--;
