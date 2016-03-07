@@ -23,9 +23,10 @@ getLowestIndex(struct filetable *ft)
 	return -1;
 }
 
-int
-filetable_init(struct filetable *ft)
-{	
+struct filetable *
+filetable_create()
+{
+	struct filetable *ft;
 	struct vnode *in_vn, *out_vn, *err_vn;
 	char *in_str = NULL, *out_str = NULL, *err_str = NULL;
 	int result;
@@ -37,7 +38,7 @@ filetable_init(struct filetable *ft)
 	if (result) {
 		kfree(in_str);
 		vfs_close(in_vn);
-		return result;
+		return NULL;
 	}
 	
 	// Init STDOUT
@@ -48,7 +49,7 @@ filetable_init(struct filetable *ft)
 		kfree(out_str);
 		vfs_close(in_vn);
 		vfs_close(out_vn);
-		return result;
+		return NULL;
 	}
 
 	// Init STDERR
@@ -61,10 +62,11 @@ filetable_init(struct filetable *ft)
 		vfs_close(in_vn);
 		vfs_close(out_vn);
 		vfs_close(err_vn);
-		return result;
+		return NULL;
 	}
 
 	// Init structs
+	ft = (struct filetable *) kmalloc(sizeof(struct filetable));
 	ft->ft_arr = (struct file **) kmalloc(sizeof(struct file *)*OPEN_MAX);
 	for (i = 0; i < OPEN_MAX; i++){
 		ft->ft_arr[i] = NULL;
@@ -78,22 +80,22 @@ filetable_init(struct filetable *ft)
 	result = filetable_add(ft, in_vn, O_RDONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
-		return result;
+		return NULL;
 	}
 
 	result = filetable_add(ft, out_vn, O_WRONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
-		return result;
+		return NULL;
 	}
 
 	result = filetable_add(ft, err_vn, O_WRONLY, &fd_ret);
 	if (result) {
 		filetable_destroy(ft);
-		return result;
+		return NULL;
 	}
 
-	return 0;
+	return ft;
 }
 
 void
