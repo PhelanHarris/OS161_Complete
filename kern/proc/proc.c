@@ -96,9 +96,10 @@ proc_create(const char *name)
 		return NULL;		
 	}
 
-	// Init threads
+	// Init fields
 	threadarray_init(&proc->p_threads);
 	spinlock_init(&proc->p_lock);
+	proc->p_cv = cv_create(name);
 
 	// VM fields 
 	proc->p_addrspace = NULL;

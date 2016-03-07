@@ -68,4 +68,7 @@ int sys_dup2(int fd_old, int fd_new);
 int sys_chdir(const char *pathname);
 int sys___getcwd(char *buf, size_t buflen, int *len);
 
+void sys__exit(int exitcode);
+int sys_waitpid(pid_t pid, int *status, int options);	
+
 #endif /* _SYSCALL_H_ */

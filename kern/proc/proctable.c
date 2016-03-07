@@ -1,12 +1,15 @@
 #include <proctable.h>
 #include <proc.h>
 #include <types.h>
+#include <synch.h>
+#include <limits.h>
 #include <kern/errno.h>
 
 // Global process table
 struct proctable *proctable;
 
 // Private function prototypes
+struct proctable_entry *proctable_create_entry(struct proc *p);
 int proctable_preallocate(unsigned num);
 int proctable_setsize(unsigned num);
 
@@ -16,7 +19,7 @@ int proctable_setsize(unsigned num);
 int
 proctable_init()
 {
-	proctable = kmalloc(sizeof(*proctable));
+	proctable = (proctable *) kmalloc(sizeof(*proctable));
 	if (proctable == NULL) {`
 		return ENOMEM;
 	}
@@ -28,7 +31,7 @@ proctable_init()
 }
 
 /**
- * Adds a process to the process table. Returns it's new pid through the second
+ * Adds a process to the process table. Returns its new pid through the second
  * parameter. Returns an error code.
  */
 int
@@ -36,7 +39,20 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 {
 	int i;
 	int result = 0;
+	struct proctable_entry *pte;
 
+	// Check if over limit
+	if (proctable->num == PID_MAX) {
+		return ENPROC;
+	}
+
+	// Create entry
+	pte = proctable_create_entry(p);
+	if (pte == NULL) {
+		return ENOMEM;
+	}
+
+	// Find a spot in the table
 	i = proctable->num;
 	proctable->num++;
 		
@@ -47,15 +63,15 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 			return result;
 		}
 
-		proctable->v[i] = p;
+		*(proctable->v)[i] = pte;
 		*ret_pid = i;
 		return 0;
 	}
 
-	// Fill in the gaps
+	// Find a gap in the table
 	for (i = 0; i < proctable->size; i++) {
-		if (proctable->v[i] == NULL) {
-			proctable->v[i] = p;
+		if (proctable_get(i) == NULL) {
+			*(proctable->v)[i] = pte;
 			*ret_pid = i;
 			return 0;
 		}
@@ -65,26 +81,73 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 }
 
 /**
+ * Creates and initializes a proctable_entry struct.
+ */
+struct proctable_entry *
+proctable_create_entry(struct proc *p)
+{
+	struct proctable_entry *pte;
+
+	pte = (proctable_entry *) kmalloc(sizeof(*pte));
+	if (pte == NULL) {
+		return NULL;
+	}
+
+	// Set values
+	pte->pte_p = p;
+	pte->pte_exitcode = -1;
+	pte->pte_cv = cv_create(pte->pte_p->p_name);
+	pte->pte_lock = lock_create(pte->pte_p->p_name);
+
+	return pte;
+}
+
+/**
+ * Gets the proctable_entry with the specified pid. Returns NULL if no such
+ * entry was found.
+ */
+struct proctable_entry *
+proctable_get(pid_t pid)
+{
+	if (pid < PID_MIN || pid > PID_MAX || pid > proctable->size) {
+		return NULL;
+	}
+
+	return *(proctable->v)[pid];
+}
+
+/**
  * Removes a process from the process table. Returns an error code.
  */
 int
 proctable_remove(pid_t pid)
 {
-	proctable->v[pid] = NULL;
+	// Assume the process has been properly destoryed
+	struct proctable_entry *pte = proctable_get(pid);
+	if (pte == NULL) {
+		return 0;
+	}
+
+	cv_destroy(pte->pte_cv);
+	lock_destroy(pte->pte_lock)
+	kfree(pte);
+
+	*(proctable->v)[pid] = NULL;
 	proctable->num--;
 
+	// Trim end of the array if needed
 	int new_size = proctable->size;
 	int i = proctable->num - 1;
-	while (proctable->v[i] == NULL){
+	while (i > 0 && proctable_get(i) == NULL){
 		i--;
 		new_size--;
 	}
 
 	if (new_size != proctable->size) {
 		return proctable_setsize(new_size);
-	} else {
-		return 0;
 	}
+
+	return 0;
 }
 
 /**

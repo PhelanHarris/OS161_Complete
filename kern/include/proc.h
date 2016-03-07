@@ -40,6 +40,7 @@
 #include <thread.h> /* required for struct threadarray */
 #include <filetable.h>
 #include <proctable.h>
+#include <synch.h>
 #include <types.h>
 
 // Define pidarray

@@ -235,13 +235,13 @@ cv_create(const char *name)
 
         cv = kmalloc(sizeof(struct cv));
         if (cv == NULL) {
-                return NULL;
+            return NULL;
         }
 
         cv->cv_name = kstrdup(name);
-        if (cv->cv_name==NULL) {
-                kfree(cv);
-                return NULL;
+        if (cv->cv_name == NULL) {
+            kfree(cv);
+            return NULL;
         }
 
         cv->cv_wchan = wchan_create(cv->cv_name);
