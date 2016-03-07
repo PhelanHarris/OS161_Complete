@@ -11,7 +11,7 @@
 #include <proc.h>
 
 int 
-sys_close (int fd)
+sys_close(int fd)
 {
 	int result = filetable_remove(curproc->p_ft, (unsigned) fd);
 	return result ? result : 0;

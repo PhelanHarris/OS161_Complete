@@ -9,7 +9,7 @@
 #include <proc.h>
 
 int 
-sys_dup2 (int fd_old, int fd_new)
+sys_dup2(int fd_old, int fd_new)
 {
 	int result;
 	sys_close(fd_new); // ignore fd not found

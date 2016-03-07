@@ -15,7 +15,9 @@
 #include <current.h>
 #include <proc.h>
 
-int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten){
+int
+sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten)
+{
  	struct file *f;
  	struct uio u;
  	struct iovec i;
@@ -23,8 +25,14 @@ int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten){
 
  	// get the file struct from the filetable
  	result = filetable_get(curproc->p_ft, fd, &f);
- 	if (result) return result;
- 	if ((f->f_flags & O_ACCMODE) != O_WRONLY && (f->f_flags & O_ACCMODE) != O_RDWR) return EBADF;
+ 	if (result) {
+ 		return result;
+ 	}
+ 	
+ 	if ((f->f_flags & O_ACCMODE) != O_WRONLY &&
+ 		(f->f_flags & O_ACCMODE) != O_RDWR) {
+ 		return EBADF;
+ 	}
 
  	// set up the uio for writing
  	i.iov_kbase = buf;
@@ -44,7 +52,9 @@ int sys_write(int fd, void *buf, size_t nbytes, ssize_t *bytesWritten){
 	f->f_cursor = u.uio_offset;
 	lock_release(f->f_lock);
 
-	if (result) return result;
+	if (result) {
+		return result;
+	}
 
 	return 0;
 }
