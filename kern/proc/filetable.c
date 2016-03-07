@@ -113,17 +113,10 @@ filetable_destroy(struct filetable *ft)
 }
 
 int
-filetable_clone(struct filetable *ft, struct filetable *ft_new) {
-	int result;
-	int i;
-
-	// Initialize new filetable
-	result = filetable_init(ft_new);
-	if (result) {
-		return result;
-	}
-
+filetable_clone(struct filetable *ft, struct filetable *ft_new)
+{
 	// Copy file pointers
+	unsigned i;
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
 			ft_new->ft_arr[i] = ft->ft_arr[i];

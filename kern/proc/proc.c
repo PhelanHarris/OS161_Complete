@@ -49,6 +49,7 @@
 #include <addrspace.h>
 #include <vnode.h>
 #include <filetable.h>
+#include <proctable.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -62,8 +63,8 @@ static
 struct proc *
 proc_create(const char *name)
 {
-	struct filetable *ft;
 	struct proc *proc;
+	int result;
 
 	// Allocate proc
 	proc = kmalloc(sizeof(*proc));
@@ -86,6 +87,15 @@ proc_create(const char *name)
 		return NULL;
 	}
 
+	// Add to process list
+	result = proctable_add(proc, &proc->p_id);
+	if (result != 0) {
+		filetable_destory(proc->p_ft);
+		kfree(proc->p_name);
+		kfree(proc);
+		return NULL;		
+	}
+
 	// Init threads
 	threadarray_init(&proc->p_threads);
 	spinlock_init(&proc->p_lock);
@@ -96,6 +106,9 @@ proc_create(const char *name)
 	// VFS fields
 	proc->p_ft = ft;
 	proc->p_cwd = NULL;
+
+	// Create children pidarray
+	proc->p_children = pidarray_create();
 
 	return proc;
 }
@@ -188,11 +201,15 @@ proc_destroy(struct proc *proc)
 }
 
 /*
- * Create the process structure for the kernel.
+ * Create the process table and process structure for the kernel.
  */
 void
 proc_bootstrap(void)
 {
+	if (proctable_init() != 0) {
+		panic("proctable_create for global process table failed\n");
+	}
+
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");

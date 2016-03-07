@@ -39,7 +39,16 @@
 #include <spinlock.h>
 #include <thread.h> /* required for struct threadarray */
 #include <filetable.h>
+#include <proctable.h>
 #include <types.h>
+
+// Define pidarray
+#ifndef PROCINLINE
+#define PROCINLINE INLINE
+#endif
+
+DECLARRAY_BYTYPE(pidarray, pid_t);
+DEFARRAY_BYTYPE(pidarray, pid_t, PROCINLINE);
 
 struct addrspace;
 struct vnode;
@@ -62,8 +71,8 @@ struct proc {
 	/* Filetable */
 	struct filetable *p_ft;
 
-	/* child processes */
-	
+	/* Child processes */
+	struct pidarray *p_children;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */

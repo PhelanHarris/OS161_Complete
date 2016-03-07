@@ -8,6 +8,8 @@ struct proctable {
 	unsigned num, size;
 };
 
+extern struct proctable *proctable;
+
 struct proctable * proctable_create(void);
 pid_t proctable_add(struct proctable *pt, proc* p);
 int proctable_remove(struct proctable *pt, pid_t pid);
