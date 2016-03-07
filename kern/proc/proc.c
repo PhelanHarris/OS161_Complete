@@ -62,25 +62,39 @@ static
 struct proc *
 proc_create(const char *name)
 {
+	struct filetable *ft;
 	struct proc *proc;
 
+	// Allocate proc
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
 	}
+
+	// Set name
 	proc->p_name = kstrdup(name);
 	if (proc->p_name == NULL) {
 		kfree(proc);
 		return NULL;
 	}
 
+	// Create filetable
+	proc->p_ft = filetable_create();
+	if (proc->p_ft == NULL) {
+		kfree(proc->p_name);
+		kfree(proc);
+		return NULL;
+	}
+
+	// Init threads
 	threadarray_init(&proc->p_threads);
 	spinlock_init(&proc->p_lock);
 
-	/* VM fields */
+	// VM fields 
 	proc->p_addrspace = NULL;
 
-	/* VFS fields */
+	// VFS fields
+	proc->p_ft = ft;
 	proc->p_cwd = NULL;
 
 	return proc;
@@ -203,11 +217,6 @@ proc_create_runprogram(const char *name)
 
 	/* VM fields */
 	newproc->p_addrspace = NULL;
-
-	/* VFS fields */
-	newproc->p_ft = (struct filetable *) kmalloc(sizeof(struct filetable));
-	int result = filetable_init(newproc->p_ft);
-	KASSERT(!result);
 
 	/*
 	 * Lock the current process to copy its current directory.

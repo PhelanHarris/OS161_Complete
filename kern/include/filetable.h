@@ -25,7 +25,7 @@ struct filetable {
 	unsigned ft_size;
 };
 
-int filetable_init(struct filetable *ft);
+struct filetable *filetable_create();
 void filetable_destroy(struct filetable *ft);
 int filetable_clone(struct filetable *ft, struct filetable *ft_new);
 int filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret);
