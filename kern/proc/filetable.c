@@ -102,7 +102,6 @@ filetable_destroy(struct filetable *ft)
 	unsigned i;
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
-			vfs_close(ft->ft_arr[i]->f_vn);
 			filetable_remove(ft, i);
 		}
 	}
@@ -126,6 +125,7 @@ filetable_clone(struct filetable *ft, struct filetable *ft_new) {
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
 			ft_new->ft_arr[i] = ft->ft_arr[i];
+			ft->ft_arr[i]->f_refcount++;
 		}
 	}
 
