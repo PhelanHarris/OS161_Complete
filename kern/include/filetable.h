@@ -27,9 +27,10 @@ struct filetable {
 
 int filetable_init(struct filetable *ft);
 void filetable_destroy(struct filetable *ft);
+int filetable_clone(struct filetable *ft, struct filetable *ft_new);
 int filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret);
 int filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_ret);
-int filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new);
+int filetable_dupfd(struct filetable *ft, unsigned fd_old, unsigned fd_new);
 int filetable_remove(struct filetable *ft, unsigned fd);
 
 #endif /* _FILETABLE_H_ */

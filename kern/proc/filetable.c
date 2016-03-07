@@ -112,6 +112,27 @@ filetable_destroy(struct filetable *ft)
 }
 
 int
+filetable_clone(struct filetable *ft, struct filetable *ft_new) {
+	int result;
+	int i;
+
+	// Initialize new filetable
+	result = filetable_init(ft_new);
+	if (result) {
+		return result;
+	}
+
+	// Copy file pointers
+	for (i = 0; i < OPEN_MAX; ++i) {
+		if (ft->ft_arr[i] != NULL) {
+			ft_new->ft_arr[i] = ft->ft_arr[i];
+		}
+	}
+
+	return 0;
+}
+
+int
 filetable_get(struct filetable *ft, unsigned fd, struct file **f_ret)
 {
 	if (fd >= OPEN_MAX) return EBADF;
@@ -164,11 +185,11 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 }
 
 /*
- * Clones a file descriptor into a new one. Returns 0 on success, or the error
- * code. The new file descriptor must point to an empty spot.
+ * Duplicates a file descriptor into a new one. Returns 0 on success, or the
+ * error code. The new file descriptor must point to an empty spot.
  */
 int
-filetable_clone(struct filetable *ft, unsigned fd_old, unsigned fd_new)
+filetable_dupfd(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 {
 	struct file *f = NULL;
 

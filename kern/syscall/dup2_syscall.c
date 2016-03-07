@@ -15,7 +15,7 @@ sys_dup2 (int fd_old, int fd_new)
 	sys_close(fd_new); // ignore fd not found
 
 	
-	result = filetable_clone(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
+	result = filetable_dupfd(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
 	if (result) return result;
 
 	return 0;
