@@ -16,7 +16,9 @@
 #include <current.h>
 #include <proc.h>
 
-int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
+int
+sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead)
+{
  	struct file *f;
  	struct uio u;
  	struct iovec i;
@@ -24,9 +26,14 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
 
  	// get the file struct from the filetable
  	result = filetable_get(curproc->p_ft, fd, &f);
- 	if (result) return result;
+ 	if (result) {
+ 		return result;
+ 	}
  	
- 	if ((f->f_flags & O_ACCMODE) != O_RDONLY && (f->f_flags & O_ACCMODE) != O_RDWR) return EBADF;
+ 	if ((f->f_flags & O_ACCMODE) != O_RDONLY && 
+ 		(f->f_flags & O_ACCMODE) != O_RDWR) {
+ 		return EBADF;
+ 	}
 
 
  	// set up the uio for reading
@@ -47,7 +54,9 @@ int sys_read(int fd, void *buf, size_t buflen, ssize_t *bytesRead){
 	f->f_cursor = u.uio_offset;
 	lock_release(f->f_lock);
 
-	if (result) return result;
+	if (result) {
+		return result;
+	}
 
 	return 0;
 }

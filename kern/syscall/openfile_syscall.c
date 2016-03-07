@@ -15,7 +15,7 @@
 #include <proc.h>
 
 int 
-sys_open (const char *filename, int flags, int *fd_ret)
+sys_open(const char *filename, int flags, int *fd_ret)
 {
 	struct vnode *vn;
 	char *name_buffer;

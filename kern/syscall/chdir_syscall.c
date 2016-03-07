@@ -11,7 +11,7 @@
 #include <current.h>
 
 int 
-sys_chdir (const char *pathname)
+sys_chdir(const char *pathname)
 {
 	char *path_buffer;
 	size_t len;

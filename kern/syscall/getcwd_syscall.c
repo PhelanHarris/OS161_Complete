@@ -9,7 +9,7 @@
 #include <uio.h>
 
 int
-sys___getcwd (char *buf, size_t buflen, int *len)
+sys___getcwd(char *buf, size_t buflen, int *len)
 {
   	struct iovec iov;
   	struct uio uio;
