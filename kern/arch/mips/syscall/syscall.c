@@ -155,6 +155,10 @@ syscall(struct trapframe *tf)
 			err = sys___getcwd((char*)tf->tf_a0, (size_t)tf->tf_a1, &retval);
 			break;
 
+		case SYS_fork:
+			err = sys_fork(tf, &retval);
+			break;
+
 	    case SYS__exit:
 			kprintf("SYS__EXIT CALLED (not implemented)\n\n");
 			err = ENOSYS;
@@ -206,5 +210,15 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(struct trapframe *tf)
 {
-	(void)tf;
+	// set return values
+	tf->tf_v0 = curproc->p_id;
+	tf->tf_a3 = 0;
+
+	// advance program counter
+	tf->tf_epc += 4;
+
+	/* Make sure the syscall code didn't forget to lower spl */
+	KASSERT(curthread->t_curspl == 0);
+	/* ...or leak any spinlocks */
+	KASSERT(curthread->t_iplhigh_count == 0);
 }
