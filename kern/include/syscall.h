@@ -70,6 +70,6 @@ int sys_chdir(const char *pathname);
 int sys___getcwd(char *buf, size_t buflen, int *len);
 
 // process related syscalls
-int sys_fork(pid_t *pid_ret);
+int sys_fork(struct trapframe *tf, pid_t *pid_ret);
 
 #endif /* _SYSCALL_H_ */
