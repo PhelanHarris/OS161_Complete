@@ -1,6 +1,6 @@
-//#include <proctable.h>
-//#include <proc.h>
-//#include <types.h>
+#include <proctable.h>
+#include <proc.h>
+#include <types.h>
 
 void proctable_cleanup (struct proctable *pt);
 int proctable_preallocate(struct proctable *pt, unsigned num);
