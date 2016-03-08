@@ -159,6 +159,15 @@ syscall(struct trapframe *tf)
 			err = sys_fork(tf, &retval);
 			break;
 
+		case SYS_getpid:
+			err = sys_getpid(&retval);
+			break;
+
+		case SYS_waitpid:
+			retval = tf->tf_a0;
+			err = sys_waitpid((int)tf->tf_a0, (int*)tf->tf_a1, (int)tf->tf_a2);
+			break;
+
 	    case SYS__exit:
 	    	sys_exit((int)tf->tf_a0);
 			kprintf("sys__exit returned for some reason. (it's not supposed to do that...)\n\n");
