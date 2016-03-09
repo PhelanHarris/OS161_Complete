@@ -386,6 +386,10 @@ file      syscall/lseek_syscall.c
 file      syscall/openfile_syscall.c
 file      syscall/read_syscall.c
 file      syscall/write_syscall.c
+file 	  syscall/exit_syscall.c
+file 	  syscall/fork_syscall.c
+file 	  syscall/getpid_syscall.c
+file 	  syscall/waitpid_syscall.c
 
 #
 # Startup and initialization

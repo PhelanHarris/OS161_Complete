@@ -1,9 +1,9 @@
-#include <proctable.h>
-#include <proc.h>
 #include <types.h>
+#include <proc.h>
 #include <synch.h>
 #include <limits.h>
 #include <kern/errno.h>
+#include <proctable.h>
 
 // Global process table
 struct proctable *proctable;
@@ -16,19 +16,19 @@ int proctable_setsize(unsigned num);
 /**
  * Initializes the process table.
  */
-int
+/*int
 proctable_init()
 {
-	proctable = (proctable *) kmalloc(sizeof(*proctable));
-	if (proctable == NULL) {`
+	proctable = (struct proctable *) kmalloc(sizeof(*proctable));
+	if (proctable == NULL) {
 		return ENOMEM;
 	}
 
-	proctable->size = proctable->num = 0;
-	proctable->v = NULL;
+	proctable->pt_size = proctable->pt_num = 0;
+	proctable->pt_v = NULL;
 
 	return 0;
-}
+}*/
 
 /**
  * Adds a process to the process table. Returns its new pid through the second
@@ -37,12 +37,12 @@ proctable_init()
 int
 proctable_add(struct proc *p, pid_t *ret_pid)
 {
-	int i;
+	unsigned i;
 	int result = 0;
 	struct proctable_entry *pte;
 
 	// Check if over limit
-	if (proctable->num == PID_MAX) {
+	if (proctable->pt_num == PID_MAX) {
 		return ENPROC;
 	}
 
@@ -53,31 +53,31 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 	}
 
 	// Find a spot in the table
-	i = proctable->num;
-	proctable->num++;
+	i = proctable->pt_num;
+	proctable->pt_num++;
 		
 	// Check if table needs to be expanded
-	if (proctable->num > proctable->size) {
-		result = proctable_setsize(proctable->num);
+	if (proctable->pt_num > proctable->pt_size) {
+		result = proctable_setsize(proctable->pt_num);
 		if (result) {
 			return result;
 		}
 
-		*(proctable->v)[i] = pte;
+		proctable->pt_v[i] = pte;
 		*ret_pid = i;
 		return 0;
 	}
 
 	// Find a gap in the table
-	for (i = 0; i < proctable->size; i++) {
+	for (i = 0; i < proctable->pt_size; i++) {
 		if (proctable_get(i) == NULL) {
-			*(proctable->v)[i] = pte;
+			proctable->pt_v[i] = pte;
 			*ret_pid = i;
 			return 0;
 		}
 	}
 
-	panic("Process table smaller than its recorded size.")
+	panic("Process table smaller than its recorded size.");
 }
 
 /**
@@ -88,7 +88,7 @@ proctable_create_entry(struct proc *p)
 {
 	struct proctable_entry *pte;
 
-	pte = (proctable_entry *) kmalloc(sizeof(*pte));
+	pte = (struct proctable_entry *) kmalloc(sizeof(*pte));
 	if (pte == NULL) {
 		return NULL;
 	}
@@ -109,11 +109,11 @@ proctable_create_entry(struct proc *p)
 struct proctable_entry *
 proctable_get(pid_t pid)
 {
-	if (pid < PID_MIN || pid > PID_MAX || pid > proctable->size) {
+	if (pid < PID_MIN || pid > PID_MAX || pid > (int)proctable->pt_size) {
 		return NULL;
 	}
 
-	return *(proctable->v)[pid];
+	return proctable->pt_v[pid];
 }
 
 /**
@@ -129,21 +129,21 @@ proctable_remove(pid_t pid)
 	}
 
 	cv_destroy(pte->pte_cv);
-	lock_destroy(pte->pte_lock)
+	lock_destroy(pte->pte_lock);
 	kfree(pte);
 
-	*(proctable->v)[pid] = NULL;
-	proctable->num--;
+	proctable->pt_v[pid] = NULL;
+	proctable->pt_num--;
 
 	// Trim end of the array if needed
-	int new_size = proctable->size;
-	int i = proctable->num - 1;
+	unsigned new_size = proctable->pt_size;
+	int i = proctable->pt_num - 1;
 	while (i > 0 && proctable_get(i) == NULL){
 		i--;
 		new_size--;
 	}
 
-	if (new_size != proctable->size) {
+	if (new_size != proctable->pt_size) {
 		return proctable_setsize(new_size);
 	}
 
@@ -175,24 +175,24 @@ proctable_preallocate(unsigned size)
 	void **newptr;
 	unsigned new_size;
 
-	if (size > proctable->size) {
+	if (size > proctable->pt_size) {
 		// Get new size
-		new_size = proctable->size;
+		new_size = proctable->pt_size;
 		while (size > new_size) {
 			new_size = new_size ? new_size*2 : 4;
 		}
 
 		// Allocate new table
-		newptr = kmalloc(new_size*sizeof(*proctable->v));
+		newptr = kmalloc(new_size*sizeof(*proctable->pt_v));
 		if (newptr == NULL) {
 			return ENOMEM;
 		}
 
 		// Copy and free old one
-		memcpy(newptr, proctable->v, proctable->num*sizeof(*proctable->v));
-		kfree(proctable->v);
-		proctable->v = newptr;
-		proctable->size = new_size;
+		memcpy(newptr, proctable->pt_v, proctable->pt_num*sizeof(*proctable->pt_v));
+		kfree(proctable->pt_v);
+		proctable->pt_v = (struct proctable_entry **)newptr;
+		proctable->pt_size = new_size;
 	}
 	return 0;
 }

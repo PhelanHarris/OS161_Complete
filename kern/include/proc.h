@@ -48,7 +48,7 @@
 #define PROCINLINE INLINE
 #endif
 
-DECLARRAY_BYTYPE(pidarray, pid_t);
+DECLARRAY_BYTYPE(pidarray, pid_t, PROCINLINE);
 DEFARRAY_BYTYPE(pidarray, pid_t, PROCINLINE);
 
 struct addrspace;

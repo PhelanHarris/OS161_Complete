@@ -20,5 +20,5 @@ sys__exit(int exitcode)
 	cv_broadcast(pte->pte_cv, pte->pte_lock);
 	
 	// Destroy process
-	proc_destory(pte->pte_p);
+	proc_destroy(pte->pte_p);
 }

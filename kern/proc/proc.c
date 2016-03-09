@@ -90,7 +90,7 @@ proc_create(const char *name)
 	// Add to process list
 	result = proctable_add(proc, &proc->p_id);
 	if (result != 0) {
-		filetable_destory(proc->p_ft);
+		filetable_destroy(proc->p_ft);
 		kfree(proc->p_name);
 		kfree(proc);
 		return NULL;		
@@ -99,13 +99,11 @@ proc_create(const char *name)
 	// Init fields
 	threadarray_init(&proc->p_threads);
 	spinlock_init(&proc->p_lock);
-	proc->p_cv = cv_create(name);
 
 	// VM fields 
 	proc->p_addrspace = NULL;
 
 	// VFS fields
-	proc->p_ft = ft;
 	proc->p_cwd = NULL;
 
 	// Create children pidarray
@@ -197,6 +195,7 @@ proc_destroy(struct proc *proc)
 	threadarray_cleanup(&proc->p_threads);
 	spinlock_cleanup(&proc->p_lock);
 
+	filetable_destroy(proc->p_ft);
 	kfree(proc->p_name);
 	kfree(proc);
 }

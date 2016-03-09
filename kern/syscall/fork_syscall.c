@@ -3,23 +3,28 @@
  *
  */
 
+#include <types.h>
+#include <proc.h>
+#include <current.h>
 #include <syscall.h>
 #include <filetable.h>
 #include <proctable.h>
+#include <mips/trapframe.h>
+#include <kern/errno.h>
+#include <addrspace.h>
 
-int 
+int
 sys_fork(struct trapframe *tf, pid_t *pid_ret)
 {
 	int ret;
 	
 	// create new process
-	struct proc *child_proc;
-	child_proc = proc_create("child process");
+	struct proc *child_proc = proc_create_runprogram("child process");
 	if (child_proc == NULL) // need to check for if max process count exceeded here also
 		return ENOMEM;
 
 	// copy address space
-	ret = as_copy(curproc->p_addrspace, child_proc->&p_addrspace);
+	ret = as_copy(curproc->p_addrspace, &child_proc->p_addrspace);
 	if (ret)
 		return ret;
 
@@ -30,7 +35,7 @@ sys_fork(struct trapframe *tf, pid_t *pid_ret)
 
 	// copy trapframe
 	struct trapframe *child_tf;
-	child_tf = kmalloc(sizeof(*tf));
+	child_tf = kmalloc(sizeof(*child_tf));
 	if (child_tf == NULL)
 		return ENOMEM;
 	*child_tf = *tf;

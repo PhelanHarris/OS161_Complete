@@ -3,6 +3,10 @@
  *
  */
 
+#include <types.h>
+#include <proc.h>
+#include <current.h>
+
  int
  sys_getpid(pid_t *pid_ret)
  {

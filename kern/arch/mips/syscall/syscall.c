@@ -169,7 +169,7 @@ syscall(struct trapframe *tf)
 			break;
 
 	    case SYS__exit:
-	    	sys_exit((int)tf->tf_a0);
+	    	sys__exit((int)tf->tf_a0);
 			kprintf("sys__exit returned for some reason. (it's not supposed to do that...)\n\n");
 			err = ENOSYS; // change to appropriate error
 			//kprintf("SYS__EXIT CALLED (not implemented)\n\n");
@@ -220,7 +220,7 @@ syscall(struct trapframe *tf)
  * Thus, you can trash it and do things another way if you prefer.
  */
 void
-enter_forked_process(struct trapframe *tf)
+enter_forked_process(struct trapframe *tf, long nargs)
 {
 	// set return values
 	tf->tf_v0 = curproc->p_id;
