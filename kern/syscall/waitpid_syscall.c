@@ -16,7 +16,7 @@ sys_waitpid(pid_t pid, int *status, int options)
 {	
 	(void) options;
 
-	int i;
+	unsigned i;
 	bool found = false;
 	struct proctable_entry *child_pte = proctable_get(pid);
 	if (child_pte == NULL) {
@@ -24,8 +24,8 @@ sys_waitpid(pid_t pid, int *status, int options)
 	}
 
 	// Check if proc is a child of curproc
-	for (i = 0; i < curproc->p_children->num; i++) {
-		pid_t child_pid = pidarray_get(curproc->p_children, i);
+	for (i = 0; i < pidarray_num(curproc->p_children); i++) {
+		pid_t child_pid = (pid_t)pidarray_get(curproc->p_children, i);
 		if (child_pid == pid) {
 			found = true;
 			break;
@@ -38,21 +38,21 @@ sys_waitpid(pid_t pid, int *status, int options)
 	lock_acquire(child_pte->pte_lock);
 
 	// Check if process has already exited
-	if (pte->pte_exitcode != -1) {
+	if (child_pte->pte_exitcode != -1) {
 		if (status != NULL) {
-			*status = pte->pte_exitcode;
+			*status = child_pte->pte_exitcode;
 		}
 		lock_release(child_pte->pte_lock);
 		return 0;
 	}
 
 	// Wait for child to exit
-	while (pte->pte_exitcode == -1) {
-		cv_wait(pte->pte_cv, pte->pte_lock);
+	while (child_pte->pte_exitcode == -1) {
+		cv_wait(child_pte->pte_cv, child_pte->pte_lock);
 	}
 
 	if (status != NULL) {
-		*status = pte->pte_exitcode;
+		*status = child_pte->pte_exitcode;
 	}
 	lock_release(child_pte->pte_lock);
 	return 0;

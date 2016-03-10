@@ -42,6 +42,8 @@
  * process that will have more than one thread is the kernel process.
  */
 
+#define PROCINLINE
+
 #include <types.h>
 #include <spl.h>
 #include <proc.h>
@@ -79,18 +81,9 @@ proc_create(const char *name)
 		return NULL;
 	}
 
-	// Create filetable
-	proc->p_ft = filetable_create();
-	if (proc->p_ft == NULL) {
-		kfree(proc->p_name);
-		kfree(proc);
-		return NULL;
-	}
-
 	// Add to process list
 	result = proctable_add(proc, &proc->p_id);
 	if (result != 0) {
-		filetable_destroy(proc->p_ft);
 		kfree(proc->p_name);
 		kfree(proc);
 		return NULL;		
@@ -234,6 +227,16 @@ proc_create_runprogram(const char *name)
 
 	/* VM fields */
 	newproc->p_addrspace = NULL;
+
+
+	// Create filetable
+	newproc->p_ft = filetable_create();
+	if (newproc->p_ft == NULL) {
+		proctable_remove(newproc->p_id);
+		kfree(newproc->p_name);
+		kfree(newproc);
+		return NULL;
+	}
 
 	/*
 	 * Lock the current process to copy its current directory.

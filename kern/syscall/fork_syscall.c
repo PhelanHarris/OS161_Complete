@@ -41,7 +41,7 @@ sys_fork(struct trapframe *tf, pid_t *pid_ret)
 	*child_tf = *tf;
 
 	// fork new thread and attach to new process
-	ret = thread_fork("child thread", child_proc, enter_forked_process, child_tf, 0);
+	ret = thread_fork("child thread", child_proc, enter_forked_process, (void*)child_tf, 0);
 	if (ret)
 		return ret;
 

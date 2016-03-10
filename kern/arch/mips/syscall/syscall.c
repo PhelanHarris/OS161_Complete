@@ -36,6 +36,7 @@
 #include <current.h>
 #include <syscall.h>
 #include <copyinout.h>
+#include <proc.h>
 
 
 /*
@@ -220,8 +221,10 @@ syscall(struct trapframe *tf)
  * Thus, you can trash it and do things another way if you prefer.
  */
 void
-enter_forked_process(struct trapframe *tf, long nargs)
+enter_forked_process(void *arg, long unsigned nargs)
 {
+	(void)nargs;
+	struct trapframe *tf = (struct trapframe*) arg;
 	// set return values
 	tf->tf_v0 = curproc->p_id;
 	tf->tf_a3 = 0;

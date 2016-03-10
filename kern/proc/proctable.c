@@ -16,7 +16,7 @@ int proctable_setsize(unsigned num);
 /**
  * Initializes the process table.
  */
-/*int
+int
 proctable_init()
 {
 	proctable = (struct proctable *) kmalloc(sizeof(*proctable));
@@ -28,7 +28,7 @@ proctable_init()
 	proctable->pt_v = NULL;
 
 	return 0;
-}*/
+}
 
 /**
  * Adds a process to the process table. Returns its new pid through the second
@@ -70,7 +70,7 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 
 	// Find a gap in the table
 	for (i = 0; i < proctable->pt_size; i++) {
-		if (proctable_get(i) == NULL) {
+		if (proctable->pt_v[i] == NULL) {
 			proctable->pt_v[i] = pte;
 			*ret_pid = i;
 			return 0;
@@ -123,7 +123,7 @@ int
 proctable_remove(pid_t pid)
 {
 	// Assume the process has been properly destoryed
-	struct proctable_entry *pte = proctable_get(pid);
+	struct proctable_entry *pte = proctable->pt_v[pid];
 	if (pte == NULL) {
 		return 0;
 	}
@@ -138,7 +138,7 @@ proctable_remove(pid_t pid)
 	// Trim end of the array if needed
 	unsigned new_size = proctable->pt_size;
 	int i = proctable->pt_num - 1;
-	while (i > 0 && proctable_get(i) == NULL){
+	while (i > 0 && proctable->pt_v[i] == NULL){
 		i--;
 		new_size--;
 	}
@@ -189,8 +189,10 @@ proctable_preallocate(unsigned size)
 		}
 
 		// Copy and free old one
-		memcpy(newptr, proctable->pt_v, proctable->pt_num*sizeof(*proctable->pt_v));
-		kfree(proctable->pt_v);
+		if (proctable->pt_v) {
+			memcpy(newptr, proctable->pt_v, proctable->pt_num*sizeof(*proctable->pt_v));
+			kfree(proctable->pt_v);
+		}
 		proctable->pt_v = (struct proctable_entry **)newptr;
 		proctable->pt_size = new_size;
 	}

@@ -17,7 +17,7 @@ struct proctable {
 
 extern struct proctable *proctable;
 
-int proctable_init();
+int proctable_init(void);
 int proctable_add(struct proc *p, pid_t *ret_pid);
 struct proctable_entry *proctable_get(pid_t pid);
 int proctable_remove(pid_t pid);

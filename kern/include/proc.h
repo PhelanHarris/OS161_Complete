@@ -42,6 +42,7 @@
 #include <proctable.h>
 #include <synch.h>
 #include <types.h>
+#include <array.h>
 
 // Define pidarray
 #ifndef PROCINLINE

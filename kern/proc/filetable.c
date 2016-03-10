@@ -22,7 +22,7 @@ getLowestIndex(struct filetable *ft)
 			return i;
 	return -1;
 }
-/*
+
 struct filetable *
 filetable_create()
 {
@@ -97,7 +97,7 @@ filetable_create()
 
 	return ft;
 }
-*/
+
 void
 filetable_destroy(struct filetable *ft)
 {
