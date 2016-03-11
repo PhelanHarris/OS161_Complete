@@ -224,16 +224,19 @@ void
 enter_forked_process(void *arg, long unsigned nargs)
 {
 	(void)nargs;
-	struct trapframe *tf = (struct trapframe*) arg;
+	struct trapframe tf = *((struct trapframe*) arg);
 	// set return values
-	tf->tf_v0 = curproc->p_id;
-	tf->tf_a3 = 0;
+	tf.tf_v0 = 0;
+	tf.tf_a3 = 0;
 
 	// advance program counter
-	tf->tf_epc += 4;
+	tf.tf_epc += 4;
 
 	/* Make sure the syscall code didn't forget to lower spl */
 	KASSERT(curthread->t_curspl == 0);
 	/* ...or leak any spinlocks */
 	KASSERT(curthread->t_iplhigh_count == 0);
+
+	// warp to usermode
+	mips_usermode(&tf);
 }

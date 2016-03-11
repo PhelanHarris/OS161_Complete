@@ -189,6 +189,7 @@ proc_destroy(struct proc *proc)
 	spinlock_cleanup(&proc->p_lock);
 
 	filetable_destroy(proc->p_ft);
+	pidarray_destroy(proc->p_children);
 	kfree(proc->p_name);
 	kfree(proc);
 }
