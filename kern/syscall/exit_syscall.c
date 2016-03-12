@@ -41,7 +41,6 @@ sys__exit(int exitcode)
 	// Detach and destroy process
 	proc_remthread(curthread);
 	proc_destroy(p);
-	pte->pte_p = NULL;
 
 	// Decrement own refcount (and release lock if it wasn't already destroyed)
 	if (!proctable_remove(pid))

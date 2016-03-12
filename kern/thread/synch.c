@@ -141,32 +141,32 @@ V(struct semaphore *sem)
 struct lock *
 lock_create(const char *name)
 {
-		struct lock *lock;
+	struct lock *lock;
 
-		lock = kmalloc(sizeof(struct lock));
-		if (lock == NULL) {
-				return NULL;
-		}
+	lock = kmalloc(sizeof(struct lock));
+	if (lock == NULL) {
+			return NULL;
+	}
 
-		lock->lk_name = kstrdup(name);
-		if (lock->lk_name == NULL) {
-				kfree(lock);
-				return NULL;
-		}
-
-		lock->lock_wchan = wchan_create(lock->lk_name);
-		if (lock->lock_wchan == NULL) {
-			kfree(lock->lk_name);
+	lock->lk_name = kstrdup(name);
+	if (lock->lk_name == NULL) {
 			kfree(lock);
 			return NULL;
-		}
+	}
 
-		spinlock_init(&lock->lock_spinlock);
+	lock->lock_wchan = wchan_create(lock->lk_name);
+	if (lock->lock_wchan == NULL) {
+		kfree(lock->lk_name);
+		kfree(lock);
+		return NULL;
+	}
 
-		lock->isHeld = false;
-		lock->holder = NULL;
+	spinlock_init(&lock->lock_spinlock);
 
-		return lock;
+	lock->isHeld = false;
+	lock->holder = NULL;
+
+	return lock;
 }
 
 void

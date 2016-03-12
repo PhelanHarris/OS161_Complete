@@ -16,18 +16,17 @@ int proctable_setsize(unsigned num);
 /**
  * Initializes the process table.
  */
-int
-proctable_init()
+void
+proctable_init(void)
 {
 	proctable = (struct proctable *) kmalloc(sizeof(*proctable));
 	if (proctable == NULL) {
-		return ENOMEM;
+		panic("proctable_init for global process table failed\n");		
 	}
 
 	proctable->pt_size = proctable->pt_num = 0;
 	proctable->pt_v = NULL;
-
-	return 0;
+	spinlock_init(&proctable_lock);
 }
 
 /**
@@ -41,14 +40,18 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 	int result = 0;
 	struct proctable_entry *pte;
 
+	spinlock_acquire(&proctable_lock);
+
 	// Check if over limit
 	if (proctable->pt_num == PID_MAX) {
+		spinlock_release(&proctable_lock);
 		return ENPROC;
 	}
 
 	// Create entry
 	pte = proctable_create_entry(p);
 	if (pte == NULL) {
+		spinlock_release(&proctable_lock);
 		return ENOMEM;
 	}
 
@@ -60,11 +63,13 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 	if (proctable->pt_num > proctable->pt_size) {
 		result = proctable_setsize(proctable->pt_num);
 		if (result) {
+			spinlock_release(&proctable_lock);
 			return result;
 		}
 
 		proctable->pt_v[i] = pte;
 		*ret_pid = i;
+		spinlock_release(&proctable_lock);
 		return 0;
 	}
 
@@ -73,6 +78,7 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 		if (proctable->pt_v[i] == NULL) {
 			proctable->pt_v[i] = pte;
 			*ret_pid = i;
+			spinlock_release(&proctable_lock);
 			return 0;
 		}
 	}
@@ -151,9 +157,11 @@ proctable_remove(pid_t pid)
 
 	// Reclaim pid
 	proctable->pt_v[pid] = NULL;
-	proctable->pt_num--;
 
 	// Determine new size of array
+	spinlock_acquire(&proctable_lock);
+
+	proctable->pt_num--;
 	unsigned new_size = proctable->pt_size;
 	int i = proctable->pt_num - 1;
 	while (i > 0 && proctable->pt_v[i] == NULL){
@@ -166,6 +174,8 @@ proctable_remove(pid_t pid)
 		KASSERT(proctable_setsize(new_size) == 0);
 	}
 
+	spinlock_release(&proctable_lock);
+
 	return true;
 }
 
@@ -175,14 +185,8 @@ proctable_remove(pid_t pid)
 int
 proctable_setsize(unsigned size)
 {
-	int result;
-
-	result = proctable_preallocate(size);
-	if (result) {
-		return result;
-	}
-
-	return 0;
+	KASSERT(spinlock_do_i_hold(&proctable_lock));
+	return proctable_preallocate(size);
 }
 
 /**

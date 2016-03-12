@@ -131,13 +131,18 @@ proc_destroy(struct proc *proc)
 	 * incorrect to destroy it.)
 	 */
 
-	/* VFS fields */
+	// Clear PTE pointer (if exists)
+	struct proctable_entry *pte = proctable_get(proc->p_id);
+	KASSERT(pte != NULL);
+	pte->pte_p = NULL;
+
+	// VFS fields
 	if (proc->p_cwd) {
 		VOP_DECREF(proc->p_cwd);
 		proc->p_cwd = NULL;
 	}
 
-	/* VM fields */
+	// VM fields
 	if (proc->p_addrspace) {
 		/*
 		 * If p is the current process, remove it safely from
@@ -177,8 +182,7 @@ proc_destroy(struct proc *proc)
 		if (proc == curproc) {
 			as = proc_setas(NULL);
 			as_deactivate();
-		}
-		else {
+		} else {
 			as = proc->p_addrspace;
 			proc->p_addrspace = NULL;
 		}
@@ -201,9 +205,7 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
-	if (proctable_init() != 0) {
-		panic("proctable_create for global process table failed\n");
-	}
+	proctable_init();
 
 	kproc = proc_create("[kernel]");
 	if (kproc == NULL) {
@@ -226,8 +228,8 @@ proc_create_child(const char *name)
 	// Create filetable
 	child->p_ft = filetable_create();
 	if (child->p_ft == NULL) {
-		proctable_remove(child->p_id);
 		proc_destroy(child);
+		proctable_remove(child->p_id);
 		return NULL;
 	}
 
@@ -240,8 +242,8 @@ proc_create_child(const char *name)
 	// Add child entry
 	struct proc_child *child_entry = kmalloc(sizeof(struct proc_child));
 	if (child_entry == NULL) {
-		proctable_remove(child->p_id);
 		proc_destroy(child);
+		proctable_remove(child->p_id);
 		return NULL;		
 	}
 	child_entry->child_pid = child->p_id;
