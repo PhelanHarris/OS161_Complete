@@ -44,16 +44,13 @@
 #include <types.h>
 #include <array.h>
 
-// Define pidarray
-#ifndef PROCINLINE
-#define PROCINLINE INLINE
-#endif
-
-DECLARRAY_BYTYPE(pidarray, pid_t, PROCINLINE);
-DEFARRAY_BYTYPE(pidarray, pid_t, PROCINLINE);
-
 struct addrspace;
 struct vnode;
+
+struct proc_child {
+	pid_t child_pid;
+	struct proc_child* next;
+};
 
 /*
  * Process structure.
@@ -74,7 +71,7 @@ struct proc {
 	struct filetable *p_ft;
 
 	/* Child processes */
-	struct pidarray *p_children;
+	struct proc_child *p_children;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */

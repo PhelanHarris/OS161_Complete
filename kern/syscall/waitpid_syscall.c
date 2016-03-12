@@ -16,7 +16,6 @@ sys_waitpid(pid_t pid, int *status, int options)
 {	
 	(void) options;
 
-	unsigned i;
 	bool found = false;
 	struct proctable_entry *child_pte = proctable_get(pid);
 	if (child_pte == NULL) {
@@ -24,12 +23,13 @@ sys_waitpid(pid_t pid, int *status, int options)
 	}
 
 	// Check if proc is a child of curproc
-	for (i = 0; i < pidarray_num(curproc->p_children); i++) {
-		pid_t child_pid = (pid_t)pidarray_get(curproc->p_children, i);
-		if (child_pid == pid) {
+	struct proc_child *child = curproc->p_children;
+	while (child != NULL){
+		if (child->child_pid == pid) {
 			found = true;
 			break;
 		}
+		child = child->next;
 	}
 	if (!found) {
 		return ECHILD;

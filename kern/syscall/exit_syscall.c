@@ -11,6 +11,8 @@
 #include <synch.h>
 #include <current.h>
 
+void kill_children(struct proc* p);
+
 void
 sys__exit(int exitcode)
 {	
@@ -22,15 +24,25 @@ sys__exit(int exitcode)
 	cv_broadcast(pte->pte_cv, pte->pte_lock);
 
 	// KILL ALL THE CHILDREN
-	int i;
-	for (i = curproc->p_children->arr.num - 1; i >= 0; i--) {
-		pid_t child_pid = (pid_t) pidarray_get(curproc->p_children, i);
-		struct proctable_entry *child = proctable_get(child_pid);
-		proctable_remove(child_pid);
-		proc_destroy(child->pte_p);
-		pidarray_remove(curproc->p_children, i);
-	}
+	kill_children(curproc);
 
 	// Destroy process
 	proc_destroy(pte->pte_p);
+}
+
+void 
+kill_children(struct proc* p)
+{
+	struct proc_child* child = p->p_children;
+	while (child != NULL) {
+		struct proctable_entry *child_pte = proctable_get(child->child_pid);
+		if (child_pte->pte_p->p_children != NULL){
+			kill_children(child_pte->pte_p);
+		}
+		proctable_remove(child->child_pid);
+		proc_destroy(child_pte->pte_p);
+		child = child->next;
+		kfree(p->p_children);
+		p->p_children = child;
+	}
 }

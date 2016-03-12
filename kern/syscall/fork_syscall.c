@@ -19,28 +19,36 @@ sys_fork(struct trapframe *tf, pid_t *pid_ret)
 	int ret;
 	
 	// create new process
-	struct proc *child_proc = proc_create_runprogram("child process");
-	if (child_proc == NULL) // need to check for if max process count exceeded here also
+	struct proc *child = proc_create_runprogram("child process");
+	if (child == NULL) // need to check for if max process count exceeded here also
 		return ENOMEM;
 
 	// add child to parent's children
-	pidarray_add(curproc->p_children, child_proc->p_id);
+	struct proc_child *parent_entry = kmalloc(sizeof(struct proc_child));
+	parent_entry->child_pid = child->p_id;
+	parent_entry->next = curproc->p_children;
+	curproc->p_children = parent_entry;
+
 
 	// copy address space
-	ret = as_copy(curproc->p_addrspace, &child_proc->p_addrspace);
+	ret = as_copy(curproc->p_addrspace, &child->p_addrspace);
 	if (ret)
 		return ret;
 
 	// copy filetable
-	ret = filetable_clone(curproc->p_ft, child_proc->p_ft);
+	ret = filetable_clone(curproc->p_ft, child->p_ft);
 	if (ret)
 		return ret;
+
+	// copy trapframe
+	struct trapframe *child_tf = kmalloc(sizeof(struct trapframe));
+	memcpy(child_tf, tf, sizeof(struct trapframe));
 
 	// fork new thread and attach to new process
-	ret = thread_fork("child thread", child_proc, enter_forked_process, (void*)tf, 0);
+	ret = thread_fork("child thread", child, enter_forked_process, (void*)child_tf, 0);
 	if (ret)
 		return ret;
 
-	*pid_ret = child_proc->p_id;
+	*pid_ret = child->p_id;
 	return 0;
 }

@@ -100,7 +100,7 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	// Create children pidarray
-	proc->p_children = pidarray_create();
+	proc->p_children = NULL;
 
 	return proc;
 }
@@ -189,7 +189,6 @@ proc_destroy(struct proc *proc)
 	spinlock_cleanup(&proc->p_lock);
 
 	filetable_destroy(proc->p_ft);
-	pidarray_destroy(proc->p_children);
 	kfree(proc->p_name);
 	kfree(proc);
 }

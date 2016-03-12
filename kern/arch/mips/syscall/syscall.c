@@ -37,6 +37,7 @@
 #include <syscall.h>
 #include <copyinout.h>
 #include <proc.h>
+#include <addrspace.h>
 
 
 /*
@@ -225,12 +226,16 @@ enter_forked_process(void *arg, long unsigned nargs)
 {
 	(void)nargs;
 	struct trapframe tf = *((struct trapframe*) arg);
+	kfree(arg);
 	// set return values
 	tf.tf_v0 = 0;
 	tf.tf_a3 = 0;
 
 	// advance program counter
 	tf.tf_epc += 4;
+
+	// activate address space
+	as_activate();
 
 	/* Make sure the syscall code didn't forget to lower spl */
 	KASSERT(curthread->t_curspl == 0);
