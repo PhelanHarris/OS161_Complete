@@ -83,7 +83,7 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 		}
 	}
 
-	panic("Process table smaller than its recorded size.");
+	panic("No vacant spot found in the process table, with size %d, and %d entries.", proctable->pt_size, proctable->pt_num);
 }
 
 /**
