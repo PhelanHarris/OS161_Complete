@@ -71,7 +71,6 @@ struct proc {
 	struct filetable *p_ft;
 
 	/* Child processes */
-	struct proc *p_parent;
 	struct proc_child *p_children;
 };
 

@@ -100,7 +100,6 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	// Establish the family
-	proc->p_parent = NULL;
 	proc->p_children = NULL;
 
 	return proc;

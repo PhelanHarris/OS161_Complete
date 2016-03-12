@@ -111,7 +111,7 @@ proctable_create_entry(struct proc *p)
 struct proctable_entry *
 proctable_get(pid_t pid)
 {
-	if (pid < PID_MIN || pid > PID_MAX || pid > (int)proctable->pt_size) {
+	if (pid > PID_MAX || pid > (int)proctable->pt_size) {
 		return NULL;
 	}
 

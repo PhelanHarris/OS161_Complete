@@ -14,7 +14,9 @@
 void
 sys__exit(int exitcode)
 {	
-	struct proctable_entry *pte = proctable_get(curproc->p_id);
+	struct proc *p = curproc;
+	pid_t pid = p->p_id;
+	struct proctable_entry *pte = proctable_get(pid);
 
 	// PTE should never be null if this proc's thread still exists at this point
 	KASSERT(pte != NULL);
@@ -28,23 +30,21 @@ sys__exit(int exitcode)
 	cv_broadcast(pte->pte_cv, pte->pte_lock);
 
 	// Decrement refcount of children
-	if (curproc->p_children != NULL) {
-		struct proc_child *child = curproc->p_children;
+	if (p->p_children != NULL) {
+		struct proc_child *child = p->p_children;
 		while (child != NULL) {
 			proctable_remove(child->child_pid);
 			child = child->next;
 		}
 	}
 
-	// Decrement own refcount
-	bool allAlone = proctable_remove(curproc->p_id);
-	
 	// Detach and destroy process
 	proc_remthread(curthread);
-	proc_destroy(curproc);
+	proc_destroy(p);
+	pte->pte_p = NULL;
 
-	// Release lock if not all alone (otherwise, lock has been destroyed)
-	if (!allAlone) 
+	// Decrement own refcount (and release lock if it wasn't already destroyed)
+	if (!proctable_remove(pid))
 		lock_release(pte->pte_lock);
 
 	// Zombify
