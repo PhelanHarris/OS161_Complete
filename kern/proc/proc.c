@@ -99,7 +99,7 @@ proc_create(const char *name)
 	// VFS fields
 	proc->p_cwd = NULL;
 
-	// Create children pidarray
+	// Create children linked list
 	proc->p_children = NULL;
 
 	return proc;

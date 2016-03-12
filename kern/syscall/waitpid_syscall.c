@@ -3,19 +3,20 @@
  *
  */
 
+#include <types.h>
 #include <syscall.h>
 #include <proctable.h>
 #include <current.h>
 #include <proc.h>
 #include <synch.h>
-#include <types.h>
+#include <copyinout.h> 
 #include <kern/errno.h>
 
 int
-sys_waitpid(pid_t pid, int *status, int options)
+sys_waitpid(pid_t pid, userptr_t status, int options)
 {	
 	(void) options;
-
+	int child_status;
 	bool found = false;
 	struct proctable_entry *child_pte = proctable_get(pid);
 	if (child_pte == NULL) {
@@ -37,23 +38,19 @@ sys_waitpid(pid_t pid, int *status, int options)
 
 	lock_acquire(child_pte->pte_lock);
 
-	// Check if process has already exited
-	if (child_pte->pte_exitcode != -1) {
-		if (status != NULL) {
-			*status = child_pte->pte_exitcode;
+	// Check if process has not already exited
+	if (child_pte->pte_exitcode == -1) {
+		// Wait for child to exit
+		while (child_pte->pte_exitcode == -1) {
+			cv_wait(child_pte->pte_cv, child_pte->pte_lock);
 		}
-		lock_release(child_pte->pte_lock);
-		return 0;
-	}
-
-	// Wait for child to exit
-	while (child_pte->pte_exitcode == -1) {
-		cv_wait(child_pte->pte_cv, child_pte->pte_lock);
 	}
 
 	if (status != NULL) {
-		*status = child_pte->pte_exitcode;
+		child_status = child_pte->pte_exitcode;
+		copyout(&child_status, status, sizeof(int));
 	}
+
 	lock_release(child_pte->pte_lock);
 	return 0;
 }
