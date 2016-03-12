@@ -140,7 +140,7 @@ proctable_remove(pid_t pid)
 	if (pte->pte_refcount != 0)
 		return false;
 
-	// Verify proc has been destoryed
+	// Cleanup the process
 	KASSERT(pte->pte_p == NULL);
 
 	// Cleanup

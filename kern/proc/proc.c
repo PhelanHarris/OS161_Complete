@@ -185,10 +185,12 @@ proc_destroy(struct proc *proc)
 		as_destroy(as);
 	}
 
+	if (proc->p_ft)
+		filetable_destroy(proc->p_ft);
+
 	threadarray_cleanup(&proc->p_threads);
 	spinlock_cleanup(&proc->p_lock);
 
-	filetable_destroy(proc->p_ft);
 	kfree(proc->p_name);
 	kfree(proc);
 }
@@ -210,47 +212,57 @@ proc_bootstrap(void)
 }
 
 /*
- * Create a fresh proc for use by runprogram.
- *
- * It will have no address space and will inherit the current
- * process's (that is, the kernel menu's) current directory.
+ * Create a child proc, parented by curproc and inheritting its cwd.
  */
 struct proc *
-proc_create_runprogram(const char *name)
+proc_create_child(const char *name)
 {
-	struct proc *newproc;
-
-	newproc = proc_create(name);
-	if (newproc == NULL) {
+	// Create new process
+	struct proc *child = proc_create(name);
+	if (child == NULL) {
 		return NULL;
 	}
-
-	/* VM fields */
-	newproc->p_addrspace = NULL;
-
 
 	// Create filetable
-	newproc->p_ft = filetable_create();
-	if (newproc->p_ft == NULL) {
-		proctable_remove(newproc->p_id);
-		kfree(newproc->p_name);
-		kfree(newproc);
+	child->p_ft = filetable_create();
+	if (child->p_ft == NULL) {
+		proctable_remove(child->p_id);
+		proc_destroy(child);
 		return NULL;
 	}
 
-	/*
-	 * Lock the current process to copy its current directory.
-	 * (We don't need to lock the new process, though, as we have
-	 * the only reference to it.)
-	 */
+	// VM setup
+	child->p_addrspace = NULL;
+
+	// Lock curproc (no need to lock child as only we have a ref to it)
 	spinlock_acquire(&curproc->p_lock);
+
+	// Add child entry
+	struct proc_child *child_entry = kmalloc(sizeof(struct proc_child));
+	if (child_entry == NULL) {
+		proctable_remove(child->p_id);
+		proc_destroy(child);
+		return NULL;		
+	}
+	child_entry->child_pid = child->p_id;
+	child_entry->next = curproc->p_children;
+	curproc->p_children = child_entry;
+
+	// The parent loves its new child
+	struct proctable_entry *child_pte = proctable_get(child->p_id);
+	KASSERT(child_pte != NULL); // This should have been caught much earlier
+	child_pte->pte_refcount++;
+
+	// Copy CWD
 	if (curproc->p_cwd != NULL) {
 		VOP_INCREF(curproc->p_cwd);
-		newproc->p_cwd = curproc->p_cwd;
+		child->p_cwd = curproc->p_cwd;
 	}
+
+	// Release curproc
 	spinlock_release(&curproc->p_lock);
 
-	return newproc;
+	return child;
 }
 
 /*

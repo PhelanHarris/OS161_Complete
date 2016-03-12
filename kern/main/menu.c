@@ -126,7 +126,7 @@ common_prog(int nargs, char **args)
 	int result;
 
 	/* Create a process for the new program to run in. */
-	proc = proc_create_runprogram(args[0] /* name */);
+	proc = proc_create_child(args[0] /* name */);
 	if (proc == NULL) {
 		return ENOMEM;
 	}

@@ -39,11 +39,9 @@ sys_waitpid(pid_t pid, userptr_t status, int options)
 	lock_acquire(child_pte->pte_lock);
 
 	// Check if process has not already exited
-	if (child_pte->pte_exitcode == -1) {
+	if (child_pte->pte_running) {
 		// Wait for child to exit
-		while (child_pte->pte_exitcode == -1) {
-			cv_wait(child_pte->pte_cv, child_pte->pte_lock);
-		}
+		cv_wait(child_pte->pte_cv, child_pte->pte_lock);
 	}
 
 	if (status != NULL) {
