@@ -16,39 +16,33 @@ void kill_children(struct proc* p);
 void
 sys__exit(int exitcode)
 {	
-	struct proctable_entry *pte = proctable_get(curproc->p_id);
-	if (pte == NULL) {
-		thread_exit();
-	}
-	KASSERT(pte != NULL); // a bit of a problem if we're on a null process
-
-	// KILL ALL THE CHILDREN
-	kill_children(curproc);
-
-	// Broadcast exit code
-	pte->pte_exitcode = exitcode;
-	cv_broadcast(pte->pte_cv, pte->pte_lock);
-
-	// Destroy process
-	//proc_destroy(pte->pte_p);
-	thread_exit();
-}
-
-void 
-kill_children(struct proc* p)
-{
-	struct proc_child* child = p->p_children;
-	while (child != NULL) {
-		struct proctable_entry *child_pte = proctable_get(child->child_pid);
-		proctable_remove(child->child_pid);
-
-		// Kill its children
-		if (child_pte->pte_p->p_children != NULL){
-			kill_children(child_pte->pte_p);
+	// Notify parents (if they are still alive)
+	if (curproc->p_parent != NULL) {
+		struct proctable_entry *pte = proctable_get(curproc->p_id);
+		
+		if (pte != NULL) {
+			// Broadcast exit code
+			pte->pte_exitcode = exitcode;
+			cv_broadcast(pte->pte_cv, pte->pte_lock);
 		}
-		proc_destroy(child_pte->pte_p);
-		child = child->next;
-		kfree(p->p_children);
-		p->p_children = child;
+	} else {
+		// No one loves this child
+		proctable_remove(curproc->p_id);
 	}
+
+	// Send condolences to the children
+	if (curproc->p_children != NULL) {
+		struct proc_child *child = curproc->p_children;
+		while (child != NULL) {
+			child->p_parent = NULL;
+			child = child->next;
+		}
+	}
+
+	// Detach and destroy process
+	proc_remthread(curthread);
+	proc_destroy(curproc);
+
+	// Zombify
+	thread_exit();
 }

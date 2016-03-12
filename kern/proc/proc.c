@@ -99,7 +99,8 @@ proc_create(const char *name)
 	// VFS fields
 	proc->p_cwd = NULL;
 
-	// Create children linked list
+	// Establish the family
+	proc->p_parent = NULL;
 	proc->p_children = NULL;
 
 	return proc;
@@ -288,7 +289,7 @@ proc_addthread(struct proc *proc, struct thread *t)
  *
  * Turn off interrupts on the local cpu while changing t_proc, in
  * case it's current, to protect against the as_activate call in
- * the timer interrupt context switch, and any other implicit uses
+ * the timer interrup tcontext switch, and any other implicit uses
  * of "curproc".
  */
 void
@@ -299,7 +300,10 @@ proc_remthread(struct thread *t)
 	int spl;
 
 	proc = t->t_proc;
-	KASSERT(proc != NULL);
+	if (t->t_proc == NULL) {
+		// Already removed
+		return;
+	}
 
 	spinlock_acquire(&proc->p_lock);
 	/* ugh: find the thread in the array */
