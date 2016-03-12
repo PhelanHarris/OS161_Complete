@@ -141,12 +141,8 @@ common_prog(int nargs, char **args)
 		return result;
 	}
 
-	/*
-	 * The new process will be destroyed when the program exits...
-	 * once you write the code for handling that.
-	 */
-
-	while(1);
+	sys_waitpid(proc->p_id);
+	
 	return 0;
 }
 
