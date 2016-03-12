@@ -95,7 +95,9 @@ proctable_create_entry(struct proc *p)
 
 	// Set values
 	pte->pte_p = p;
+	pte->pte_refcount = 1;
 	pte->pte_exitcode = -1;
+	pte->pte_running = true;
 	pte->pte_cv = cv_create(pte->pte_p->p_name);
 	pte->pte_lock = lock_create(pte->pte_p->p_name);
 
@@ -117,25 +119,41 @@ proctable_get(pid_t pid)
 }
 
 /**
- * Removes a process from the process table. Returns an error code.
+ * Removes a process from the process table. Returns true if the proctabe_entry
+ * was actually removed (refcount was 0), otherwise false.
  */
-int
+bool
 proctable_remove(pid_t pid)
-{
-	// Assume the process has been properly destoryed
+{	
+	// Get PTE
 	struct proctable_entry *pte = proctable->pt_v[pid];
-	if (pte == NULL) {
-		return 0;
-	}
+	KASSERT(pte != NULL);
 
-	cv_destroy(pte->pte_cv);
+	// Make sure atomic
+	if (!lock_do_i_hold(pte->pte_lock))
+		lock_acquire(pte->pte_lock);
+
+	// Decrement refcount
+	pte->pte_refcount--;
+
+	// Return if refs still exist
+	if (pte->pte_refcount != 0)
+		return false;
+
+	// Verify proc has been destoryed
+	KASSERT(pte->pte_p == NULL);
+
+	// Cleanup
+	lock_release(pte->pte_lock);
 	lock_destroy(pte->pte_lock);
+	cv_destroy(pte->pte_cv);
 	kfree(pte);
 
+	// Reclaim pid
 	proctable->pt_v[pid] = NULL;
 	proctable->pt_num--;
 
-	// Trim end of the array if needed
+	// Determine new size of array
 	unsigned new_size = proctable->pt_size;
 	int i = proctable->pt_num - 1;
 	while (i > 0 && proctable->pt_v[i] == NULL){
@@ -143,11 +161,12 @@ proctable_remove(pid_t pid)
 		new_size--;
 	}
 
+	// Trim the end of the array if needed (must not fail)
 	if (new_size != proctable->pt_size) {
-		return proctable_setsize(new_size);
+		KASSERT(proctable_setsize(new_size) == 0);
 	}
 
-	return 0;
+	return true;
 }
 
 /**

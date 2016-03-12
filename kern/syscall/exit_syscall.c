@@ -11,37 +11,41 @@
 #include <synch.h>
 #include <current.h>
 
-void kill_children(struct proc* p);
-
 void
 sys__exit(int exitcode)
 {	
-	// Notify parents (if they are still alive)
-	if (curproc->p_parent != NULL) {
-		struct proctable_entry *pte = proctable_get(curproc->p_id);
-		
-		if (pte != NULL) {
-			// Broadcast exit code
-			pte->pte_exitcode = exitcode;
-			cv_broadcast(pte->pte_cv, pte->pte_lock);
-		}
-	} else {
-		// No one loves this child
-		proctable_remove(curproc->p_id);
-	}
+	struct proctable_entry *pte = proctable_get(curproc->p_id);
 
-	// Send condolences to the children
+	// PTE should never be null if this proc's thread still exists at this point
+	KASSERT(pte != NULL);
+
+	// Update exit code
+	lock_acquire(pte->pte_lock);
+	pte->pte_running = false;
+	pte->pte_exitcode = exitcode;
+
+	// Broadcast
+	cv_broadcast(pte->pte_cv, pte->pte_lock);
+
+	// Decrement refcount of children
 	if (curproc->p_children != NULL) {
 		struct proc_child *child = curproc->p_children;
 		while (child != NULL) {
-			child->p_parent = NULL;
+			proctable_remove(child->child_pid);
 			child = child->next;
 		}
 	}
 
+	// Decrement own refcount
+	bool allAlone = proctable_remove(curproc->p_id);
+	
 	// Detach and destroy process
 	proc_remthread(curthread);
 	proc_destroy(curproc);
+
+	// Release lock if not all alone (otherwise, lock has been destroyed)
+	if (!allAlone) 
+		lock_release(pte->pte_lock);
 
 	// Zombify
 	thread_exit();

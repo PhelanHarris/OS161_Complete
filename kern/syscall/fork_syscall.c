@@ -24,13 +24,15 @@ sys_fork(struct trapframe *tf, pid_t *pid_ret)
 		return ENOMEM;
 
 	// Add child to parent's children
-	struct proc_child *parent_entry = kmalloc(sizeof(struct proc_child));
-	parent_entry->child_pid = child->p_id;
-	parent_entry->next = curproc->p_children;
-	curproc->p_children = parent_entry;
+	struct proc_child *child_entry = kmalloc(sizeof(struct proc_child));
+	child_entry->child_pid = child->p_id;
+	child_entry->next = curproc->p_children;
+	curproc->p_children = child_entry;
 
-	// One of the family
-	child->p_parent = curproc;
+	// The parent loves its new child
+	struct proctable_entry *child_pte = proctable_get(child->p_id);
+	KASSERT(child_pte != NULL);
+	child_pte->pte_refcount++; // refcount should be 2
 
 	// Copy address space
 	ret = as_copy(curproc->p_addrspace, &child->p_addrspace);
@@ -45,7 +47,6 @@ sys_fork(struct trapframe *tf, pid_t *pid_ret)
 	// Copy trapframe
 	struct trapframe *child_tf = kmalloc(sizeof(struct trapframe));
 	memcpy(child_tf, tf, sizeof(struct trapframe));
-
 
 	// Fork new thread and attach to new process
 	ret = thread_fork("child thread", child, enter_forked_process, (void*)child_tf, 0);
