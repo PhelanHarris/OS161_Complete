@@ -27,19 +27,19 @@ sys_execv(const char *program, char **args)
 	size_t programlen;
 
 	if (program == NULL){
-		kprogram = kmalloc(sizeof(char));
-		kprogram[0] = '\0';
+		return ENOENT;
 	}
 	else {
 		kprogram = kmalloc(sizeof(char) * (strlen(program) + 1));
+		if (kprogram == NULL){
+			return ENOMEM;
+		}
 		// copy program name into kernel space
 		result = copyinstr((const_userptr_t)program, kprogram, sizeof(char) * (strlen(program) + 1), &programlen);
 		if (result){
+			kfree(kprogram);
 			return result;
 		}
-	}
-	if (kprogram == NULL){
-		return ENOMEM;
 	}
 
 	size_t total_arglen = 0;
