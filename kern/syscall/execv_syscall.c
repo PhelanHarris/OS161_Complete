@@ -38,6 +38,9 @@ sys_execv(const char *program, char **args)
 			return result;
 		}
 	}
+	if (kprogram == NULL){
+		return ENOMEM;
+	}
 	
 	
 
@@ -60,6 +63,14 @@ sys_execv(const char *program, char **args)
 	for (i = 0; i < argc; i++){
 		
 		kargs[i] = kmalloc(sizeof(char) * (strlen(args[i]) + 1));
+		if (kargs[i] == NULL){
+			kfree(kprogram);
+			int j;
+			for (j = 0; j < i; j++){
+				kfree(kargs[j]);
+			}
+			return ENOMEM;
+		}
 		result = copyinstr((const_userptr_t)args[i], kargs[i], strlen(args[i]) + 1, &actual);
 		if (result){
 			kfree(kprogram);

@@ -127,9 +127,9 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 		return result;
 	}
 
-	int *arglengths = kmalloc(sizeof(int) * argc);
+	size_t arglengths[argc];
 	int total_len = 0;
-	userptr_t *arg_ptrs = kmalloc(sizeof(userptr_t) * (argc + 1));
+	userptr_t arg_ptrs[argc + 1];
 
 	int i;
 	for (i = 0; i < argc; i++){
@@ -163,18 +163,12 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 
 	if (oldas != NULL){
 		as_destroy(oldas);
-		for (i = 0; i < argc; i++){
-			kfree(args[i]);
-		}
 	}
 
 	if (oldas != NULL){
 		kfree(progname);
 		as_destroy(oldas);
 	}
-
-	kfree(arglengths);
-	kfree(arg_ptrs);
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t)stackptr /*userspace addr of argv*/,
