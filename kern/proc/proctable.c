@@ -88,9 +88,21 @@ proctable_create_entry(struct proc *p)
 	pte->pte_refcount = 1;
 	pte->pte_exitcode = -1;
 	pte->pte_running = true;
+	
+	// Create condition variable
 	pte->pte_cv = cv_create(pte->pte_p->p_name);
-	pte->pte_lock = lock_create(pte->pte_p->p_name);
+	if (pte->pte_cv == NULL) {
+		kfree(pte);
+		return NULL;
+	}
 
+	// Create lock
+	pte->pte_lock = lock_create(pte->pte_p->p_name);
+	if (pte->pte_lock == NULL) {
+		cv_destroy(pte->pte_cv);
+		kfree(pte);
+		return NULL;
+	}
 	return pte;
 }
 
