@@ -49,7 +49,6 @@ sys_execv(const char *program, char **args)
 	size_t total_arglen = 0;
 	while (args[argc] != NULL){
 		total_arglen += strlen(args[argc]) + 1;
-		// padded length
 		argc++;
 	}
 	if (total_arglen > ARG_MAX){

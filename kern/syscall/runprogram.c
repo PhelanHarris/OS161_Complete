@@ -60,12 +60,17 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	vaddr_t entrypoint, stackptr;
 	size_t actual;
 	int result;
+	int i;
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
-		if (oldas != NULL)
+		if (oldas != NULL){
 			kfree(progname);
+			for (i = 0; i < argc; i++){
+				kfree(args[i]);
+			}
+		}
 		return result;
 	}
 
@@ -73,8 +78,12 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	as = as_create();
 	if (as == NULL) {
 		vfs_close(v);
-		if (oldas != NULL)
+		if (oldas != NULL) {
 			kfree(progname);
+			for (i = 0; i < argc; i++){
+				kfree(args[i]);
+			}
+		}
 		return ENOMEM;
 	}
 
@@ -100,6 +109,9 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 			proc_setas(oldas);
 			as_activate();
 			kfree(progname);
+			for (i = 0; i < argc; i++){
+				kfree(args[i]);
+			}
 		}
 		vfs_close(v);
 		return result;
@@ -122,7 +134,9 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 			proc_setas(oldas);
 			as_activate();
 			kfree(progname);
-
+			for (i = 0; i < argc; i++){
+				kfree(args[i]);
+			}
 		}
 		return result;
 	}
@@ -131,7 +145,6 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	int total_len = 0;
 	userptr_t arg_ptrs[argc + 1];
 
-	int i;
 	for (i = 0; i < argc; i++){
 		arglengths[i] = (strlen(args[i])+1)*sizeof(char);
 		total_len += arglengths[i] + ((4 - arglengths[i] % 4) % 4);
@@ -162,12 +175,11 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	}
 
 	if (oldas != NULL){
-		as_destroy(oldas);
-	}
-
-	if (oldas != NULL){
 		kfree(progname);
 		as_destroy(oldas);
+		for (i = 0; i < argc; i++){
+			kfree(args[i]);
+		}
 	}
 
 	/* Warp to user mode. */
