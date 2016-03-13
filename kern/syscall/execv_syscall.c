@@ -101,7 +101,8 @@ sys_execv(const char *program, char **args)
 		return E2BIG;
 	}
 
-	char *kargs[argc+1];
+	char *kargs[argc + 1];
+	userptr_t arg_ptrs[argc + 1];
 	size_t arglengths[argc];
 	int total_len = 0;
 	size_t actual = 0;
@@ -137,22 +138,32 @@ sys_execv(const char *program, char **args)
 	// null terminate the array of args
 	kargs[argc] = NULL;
 
+	// make space on the stack for arguments
 	stackptr -= (argc+1)*4 + total_len;
 
-	userptr_t argval_start = (userptr_t)stackptr + argc*4;
+	userptr_t arg_dest = (userptr_t) stackptr;
+	userptr_t argval_dest = (userptr_t) stackptr + argc*4;
+
 
 
 	// copy out string arguments back to user space
 	for (i = 0; i < argc; i++){
-		copyout(kargs[i], argval_start, arglengths[i]);
+		// copy out the string array values
+		copyoutstr(kargs[i], argval_dest, arglengths[i], &actual);
+		arg_ptrs[i] = (userptr_t) argval_dest;
+		
+		// copy out the pointer to the string array values
+		copyout(&arg_ptrs[i], arg_dest, sizeof(char*));
+		arg_dest += sizeof(char*);
+
+		// increment the argval_dest by the length of the last argument (padded)
 		if (arglengths[i] % 4 == 0){
-			argval_start += arglengths[i];
+			argval_dest += arglengths[i];
 		}
 		else {
-			argval_start += arglengths[i] + (4 - arglengths[i] % 4);
+			argval_dest += arglengths[i] + (4 - arglengths[i] % 4);
 		}
 	}
-
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t)args /*userspace addr of argv*/,
