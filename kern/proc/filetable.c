@@ -116,6 +116,8 @@ int
 filetable_clone(struct filetable *ft, struct filetable *ft_new)
 {
 	// Copy file pointers
+	lock_acquire(ft->ft_lock);
+	lock_acquire(ft_new->ft_lock);
 	unsigned i;
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
@@ -123,6 +125,8 @@ filetable_clone(struct filetable *ft, struct filetable *ft_new)
 			ft->ft_arr[i]->f_refcount++;
 		}
 	}
+	lock_release(ft_new->ft_lock);
+	lock_release(ft->ft_lock);
 
 	return 0;
 }

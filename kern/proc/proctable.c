@@ -10,7 +10,6 @@ struct proctable *proctable;
 
 // Private function prototypes
 struct proctable_entry *proctable_create_entry(struct proc *p);
-int proctable_preallocate(unsigned num);
 int proctable_setsize(unsigned num);
 
 /**
@@ -159,7 +158,7 @@ proctable_remove(pid_t pid)
 	proctable->pt_v[pid] = NULL;
 
 	// Determine new size of array
-	spinlock_acquire(&proctable_lock);
+	/*spinlock_acquire(&proctable_lock);
 
 	proctable->pt_num--;
 	unsigned new_size = proctable->pt_size;
@@ -174,7 +173,7 @@ proctable_remove(pid_t pid)
 		KASSERT(proctable_setsize(new_size) == 0);
 	}
 
-	spinlock_release(&proctable_lock);
+	spinlock_release(&proctable_lock);*/
 
 	return true;
 }
@@ -185,28 +184,20 @@ proctable_remove(pid_t pid)
 int
 proctable_setsize(unsigned size)
 {
-	KASSERT(spinlock_do_i_hold(&proctable_lock));
-	return proctable_preallocate(size);
-}
-
-/**
- * Allocates a new process table of at least the size specified.
- */
-int
-proctable_preallocate(unsigned size)
-{
-	void **newptr;
+	struct proctable_entry **newptr;
 	unsigned new_size;
+
+	KASSERT(spinlock_do_i_hold(&proctable_lock));
 
 	if (size > proctable->pt_size) {
 		// Get new size
 		new_size = proctable->pt_size;
 		while (size > new_size) {
-			new_size = new_size ? new_size*2 : 4;
+			new_size = new_size ? new_size*2 : PID_MAX/2;
 		}
 
 		// Allocate new table
-		newptr = kmalloc(new_size*sizeof(*proctable->pt_v));
+		newptr = (struct proctable_entry **) kmalloc(new_size*sizeof(*proctable->pt_v));
 		if (newptr == NULL) {
 			return ENOMEM;
 		}
@@ -216,7 +207,7 @@ proctable_preallocate(unsigned size)
 			memcpy(newptr, proctable->pt_v, proctable->pt_num*sizeof(*proctable->pt_v));
 			kfree(proctable->pt_v);
 		}
-		proctable->pt_v = (struct proctable_entry **)newptr;
+		proctable->pt_v = newptr;
 		proctable->pt_size = new_size;
 	}
 	return 0;
