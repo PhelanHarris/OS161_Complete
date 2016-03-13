@@ -3,11 +3,13 @@
  *
  */
 
+#include <types.h>
+#include <limits.h>
+#include <copyinout.h>
+#include <kern/errno.h>
 #include <syscall.h>
 #include <filetable.h>
 #include <vfs.h>
-#include <limits.h>
-#include <copyinout.h>
 #include <current.h>
 
 int 
@@ -17,8 +19,13 @@ sys_chdir(const char *pathname)
 	size_t len;
 	int result;
 
-	// Copy pathname locally
+	// Allocate space for pathname
 	path_buffer = (char *) kmalloc(sizeof(char)*PATH_MAX);
+	if (path_buffer == NULL) {
+		return ENOMEM;
+	}
+
+	// Copy pathname locally
 	result = copyinstr((const_userptr_t)pathname, path_buffer, PATH_MAX, &len);
 	if (result) {
 		kfree(path_buffer);

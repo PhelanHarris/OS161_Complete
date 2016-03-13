@@ -22,6 +22,10 @@ sys___getcwd(char *buf, size_t buflen, int *len)
   	struct uio uio;
   	char *kbuf = (char *) kmalloc(sizeof(*kbuf)*buflen);
   	int result;
+
+  	if (kbuf == NULL) {
+  		return ENOMEM;
+  	}
 	
 	uio_kinit(&iov, &uio, kbuf, buflen, 0, UIO_READ);
 

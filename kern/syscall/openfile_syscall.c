@@ -34,6 +34,10 @@ sys_open(const char *filename, int flags, int *fd_ret)
 
 	// Copy filename locally
 	name_buffer = (char *) kmalloc(sizeof(char)*PATH_MAX);
+	if (name_buffer == NULL) {
+		return ENOMEM;
+	}
+	
 	result = copyinstr((const_userptr_t)filename, name_buffer, PATH_MAX, &len);
 	if (result) {
 		kfree(name_buffer);
