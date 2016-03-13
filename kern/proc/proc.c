@@ -114,14 +114,6 @@ proc_create(const char *name)
 void
 proc_destroy(struct proc *proc)
 {
-	/*
-	 * You probably want to destroy and null out much of the
-	 * process (particularly the address space) at exit time if
-	 * your wait/exit design calls for the process structure to
-	 * hang around beyond process exit. Some wait/exit designs
-	 * do, some don't.
-	 */
-
 	KASSERT(proc != NULL);
 	KASSERT(proc != kproc);
 
@@ -130,11 +122,6 @@ proc_destroy(struct proc *proc)
 	 * reference to this structure. (Otherwise it would be
 	 * incorrect to destroy it.)
 	 */
-
-	// Clear PTE pointer (if exists)
-	struct proctable_entry *pte = proctable_get(proc->p_id);
-	KASSERT(pte != NULL);
-	pte->pte_p = NULL;
 
 	// VFS fields
 	if (proc->p_cwd) {
@@ -189,11 +176,17 @@ proc_destroy(struct proc *proc)
 		as_destroy(as);
 	}
 
+	// Clear filetable
 	if (proc->p_ft)
 		filetable_destroy(proc->p_ft);
 
 	threadarray_cleanup(&proc->p_threads);
 	spinlock_cleanup(&proc->p_lock);
+
+	// Clear PTE pointer (if exists)
+	struct proctable_entry *pte = proctable_get(proc->p_id);
+	if (pte != NULL)
+		pte->pte_p = NULL;
 
 	kfree(proc->p_name);
 	kfree(proc);
@@ -224,17 +217,17 @@ proc_create_child(const char *name)
 	if (child == NULL) {
 		return NULL;
 	}
+	
+	// VM setup
+	child->p_addrspace = NULL;
 
 	// Create filetable
 	child->p_ft = filetable_create();
 	if (child->p_ft == NULL) {
-		proc_destroy(child);
 		proctable_remove(child->p_id);
+		proc_destroy(child);
 		return NULL;
 	}
-
-	// VM setup
-	child->p_addrspace = NULL;
 
 	// Lock curproc (no need to lock child as only we have a ref to it)
 	spinlock_acquire(&curproc->p_lock);
@@ -242,8 +235,9 @@ proc_create_child(const char *name)
 	// Add child entry
 	struct proc_child *child_entry = kmalloc(sizeof(struct proc_child));
 	if (child_entry == NULL) {
-		proc_destroy(child);
+		spinlock_release(&curproc->p_lock);
 		proctable_remove(child->p_id);
+		proc_destroy(child);
 		return NULL;		
 	}
 	child_entry->child_pid = child->p_id;

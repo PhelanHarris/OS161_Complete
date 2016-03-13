@@ -23,8 +23,11 @@ proctable_init(void)
 		panic("proctable_init for global process table failed\n");		
 	}
 
-	proctable->pt_size = proctable->pt_num = 0;
-	proctable->pt_v = NULL;
+	proctable->pt_num = 0;
+	proctable->pt_size = PID_MAX;
+	proctable->pt_v = (struct proctable_entry **) kmalloc(
+		sizeof(*(proctable->pt_v)) * PID_MAX);
+
 	spinlock_init(&proctable_lock);
 }
 
@@ -36,13 +39,12 @@ int
 proctable_add(struct proc *p, pid_t *ret_pid)
 {
 	unsigned i;
-	int result = 0;
 	struct proctable_entry *pte;
 
 	spinlock_acquire(&proctable_lock);
 
 	// Check if over limit
-	if (proctable->pt_num == PID_MAX) {
+	if ((proctable->pt_num + 1) == PID_MAX) {
 		spinlock_release(&proctable_lock);
 		return ENPROC;
 	}
@@ -55,27 +57,10 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 	}
 
 	// Find a spot in the table
-	i = proctable->pt_num;
-	proctable->pt_num++;
-		
-	// Check if table needs to be expanded
-	if (proctable->pt_num > proctable->pt_size) {
-		result = proctable_setsize(proctable->pt_num);
-		if (result) {
-			spinlock_release(&proctable_lock);
-			return result;
-		}
-
-		proctable->pt_v[i] = pte;
-		*ret_pid = i;
-		spinlock_release(&proctable_lock);
-		return 0;
-	}
-
-	// Find a gap in the table
-	for (i = 0; i < proctable->pt_size; i++) {
+	for (i = 0; i < PID_MAX; i++) {
 		if (proctable->pt_v[i] == NULL) {
 			proctable->pt_v[i] = pte;
+			proctable->pt_num++;
 			*ret_pid = i;
 			spinlock_release(&proctable_lock);
 			return 0;
@@ -144,9 +129,6 @@ proctable_remove(pid_t pid)
 	// Return if refs still exist
 	if (pte->pte_refcount != 0)
 		return false;
-
-	// Cleanup the process
-	KASSERT(pte->pte_p == NULL);
 
 	// Cleanup
 	lock_release(pte->pte_lock);

@@ -184,7 +184,7 @@ lock_destroy(struct lock *lock)
 
 void
 lock_acquire(struct lock *lock)
-{
+{	
 	KASSERT(lock != NULL);
 
 	KASSERT(curthread->t_in_interrupt == false);

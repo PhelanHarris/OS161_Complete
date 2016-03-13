@@ -13,6 +13,5 @@
 int 
 sys_close(int fd)
 {
-	int result = filetable_remove(curproc->p_ft, (unsigned) fd);
-	return result ? result : 0;
+	return filetable_remove(curproc->p_ft, (unsigned) fd);
 }

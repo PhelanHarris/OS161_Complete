@@ -15,13 +15,17 @@
 int
 sys_waitpid(pid_t pid, userptr_t status, int options)
 {	
-	(void) options;
+	if (options != 0)
+		return EINVAL;
+
+	int result;
 	int child_status;
 	bool found = false;
+
+	// Get pte
 	struct proctable_entry *child_pte = proctable_get(pid);
-	if (child_pte == NULL) {
+	if (child_pte == NULL)
 		return ESRCH;
-	}
 
 	// Check if proc is a child of curproc
 	struct proc_child *child = curproc->p_children;
@@ -46,9 +50,9 @@ sys_waitpid(pid_t pid, userptr_t status, int options)
 
 	if (status != NULL) {
 		child_status = child_pte->pte_exitcode;
-		copyout(&child_status, status, sizeof(int));
+		result = copyout(&child_status, status, sizeof(int));
 	}
 
 	lock_release(child_pte->pte_lock);
-	return 0;
+	return result;
 }

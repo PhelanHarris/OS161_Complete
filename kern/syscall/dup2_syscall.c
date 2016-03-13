@@ -11,12 +11,5 @@
 int 
 sys_dup2(int fd_old, int fd_new)
 {
-	int result;
-	sys_close(fd_new); // ignore fd not found
-
-	
-	result = filetable_dupfd(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
-	if (result) return result;
-
-	return 0;
+	return filetable_dupfd(curproc->p_ft, (unsigned) fd_old, (unsigned) fd_new);
 }

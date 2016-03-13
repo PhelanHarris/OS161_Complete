@@ -135,6 +135,9 @@ getdevice(char *path, char **subpath, struct vnode **startvn)
 
 	KASSERT(vfs_biglock_do_i_hold());
 
+	if (path == NULL)
+		return ENODEV;
+
 	/*
 	 * Locate the first colon or slash.
 	 */

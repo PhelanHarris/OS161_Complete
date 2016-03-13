@@ -3,25 +3,40 @@
  *
  */
 
+#include <types.h>
 #include <syscall.h>
 #include <filetable.h>
 #include <vfs.h>
 #include <uio.h>
+#include <kern/errno.h>
+#include <copyinout.h>
 
 int
 sys___getcwd(char *buf, size_t buflen, int *len)
 {
+	if (buf == NULL) {
+		return EFAULT;
+	}
+
   	struct iovec iov;
   	struct uio uio;
+  	char *kbuf = (char *) kmalloc(sizeof(*kbuf)*buflen);
   	int result;
 	
-	uio_kinit(&iov, &uio, buf, buflen, 0, UIO_READ);
+	uio_kinit(&iov, &uio, kbuf, buflen, 0, UIO_READ);
 
-	// Return result
+	// Get cwd
 	result = vfs_getcwd(&uio);
-	if (result){
+	if (result) {
+		kfree(kbuf);
 		return result;
 	}
+
+	// Pass back offset
 	*len = uio.uio_offset;
-	return 0;
+
+	// Copy into user-space buffer
+	result = copyout(kbuf, (userptr_t) buf, buflen);
+	kfree(kbuf);
+	return result;
 }

@@ -28,6 +28,11 @@ sys_lseek(int fd, off_t pos, int whence, off_t *newCursor)
  		return result;
  	}
 
+ 	// check if vnode is a file
+ 	if (f->f_vn->vn_fs == NULL) {
+ 		return ESPIPE;
+ 	}
+
  	lock_acquire(f->f_lock);
  	if (whence == SEEK_SET){
  		*newCursor = pos;
