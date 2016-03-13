@@ -26,8 +26,8 @@ sys_execv(const char *program, char **args)
 	char *kprogram;
 	size_t programlen;
 
-	if (program == NULL){
-		return ENOENT;
+	if (program == NULL || args == NULL){
+		return EFAULT;
 	}
 	else {
 		kprogram = kmalloc(sizeof(char) * (strlen(program) + 1));
@@ -44,7 +44,8 @@ sys_execv(const char *program, char **args)
 
 	size_t total_arglen = 0;
 	while (args[argc] != NULL){
-		total_arglen += strlen(args[argc]) + 1;
+		size_t cur = strlen(args[argc]) + 1;
+		total_arglen += cur + ((4 - cur % 4) % 4);
 		argc++;
 	}
 	if (total_arglen > ARG_MAX){
