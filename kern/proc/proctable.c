@@ -10,7 +10,6 @@ struct proctable *proctable;
 
 // Private function prototypes
 struct proctable_entry *proctable_create_entry(struct proc *p);
-int proctable_preallocate(unsigned num);
 int proctable_setsize(unsigned num);
 
 /**
@@ -24,8 +23,11 @@ proctable_init(void)
 		panic("proctable_init for global process table failed\n");		
 	}
 
-	proctable->pt_size = proctable->pt_num = 0;
-	proctable->pt_v = NULL;
+	proctable->pt_num = 0;
+	proctable->pt_size = PID_MAX;
+	proctable->pt_v = (struct proctable_entry **) kmalloc(
+		sizeof(*(proctable->pt_v)) * PID_MAX);
+
 	spinlock_init(&proctable_lock);
 }
 
@@ -37,13 +39,12 @@ int
 proctable_add(struct proc *p, pid_t *ret_pid)
 {
 	unsigned i;
-	int result = 0;
 	struct proctable_entry *pte;
 
 	spinlock_acquire(&proctable_lock);
 
 	// Check if over limit
-	if (proctable->pt_num == PID_MAX) {
+	if ((proctable->pt_num + 1) == PID_MAX) {
 		spinlock_release(&proctable_lock);
 		return ENPROC;
 	}
@@ -56,27 +57,10 @@ proctable_add(struct proc *p, pid_t *ret_pid)
 	}
 
 	// Find a spot in the table
-	i = proctable->pt_num;
-	proctable->pt_num++;
-		
-	// Check if table needs to be expanded
-	if (proctable->pt_num > proctable->pt_size) {
-		result = proctable_setsize(proctable->pt_num);
-		if (result) {
-			spinlock_release(&proctable_lock);
-			return result;
-		}
-
-		proctable->pt_v[i] = pte;
-		*ret_pid = i;
-		spinlock_release(&proctable_lock);
-		return 0;
-	}
-
-	// Find a gap in the table
-	for (i = 0; i < proctable->pt_size; i++) {
+	for (i = 0; i < PID_MAX; i++) {
 		if (proctable->pt_v[i] == NULL) {
 			proctable->pt_v[i] = pte;
+			proctable->pt_num++;
 			*ret_pid = i;
 			spinlock_release(&proctable_lock);
 			return 0;
@@ -146,9 +130,6 @@ proctable_remove(pid_t pid)
 	if (pte->pte_refcount != 0)
 		return false;
 
-	// Cleanup the process
-	KASSERT(pte->pte_p == NULL);
-
 	// Cleanup
 	lock_release(pte->pte_lock);
 	lock_destroy(pte->pte_lock);
@@ -159,7 +140,7 @@ proctable_remove(pid_t pid)
 	proctable->pt_v[pid] = NULL;
 
 	// Determine new size of array
-	spinlock_acquire(&proctable_lock);
+	/*spinlock_acquire(&proctable_lock);
 
 	proctable->pt_num--;
 	unsigned new_size = proctable->pt_size;
@@ -174,7 +155,7 @@ proctable_remove(pid_t pid)
 		KASSERT(proctable_setsize(new_size) == 0);
 	}
 
-	spinlock_release(&proctable_lock);
+	spinlock_release(&proctable_lock);*/
 
 	return true;
 }
@@ -185,28 +166,20 @@ proctable_remove(pid_t pid)
 int
 proctable_setsize(unsigned size)
 {
-	KASSERT(spinlock_do_i_hold(&proctable_lock));
-	return proctable_preallocate(size);
-}
-
-/**
- * Allocates a new process table of at least the size specified.
- */
-int
-proctable_preallocate(unsigned size)
-{
-	void **newptr;
+	struct proctable_entry **newptr;
 	unsigned new_size;
+
+	KASSERT(spinlock_do_i_hold(&proctable_lock));
 
 	if (size > proctable->pt_size) {
 		// Get new size
 		new_size = proctable->pt_size;
 		while (size > new_size) {
-			new_size = new_size ? new_size*2 : 4;
+			new_size = new_size ? new_size*2 : PID_MAX/2;
 		}
 
 		// Allocate new table
-		newptr = kmalloc(new_size*sizeof(*proctable->pt_v));
+		newptr = (struct proctable_entry **) kmalloc(new_size*sizeof(*proctable->pt_v));
 		if (newptr == NULL) {
 			return ENOMEM;
 		}
@@ -216,7 +189,7 @@ proctable_preallocate(unsigned size)
 			memcpy(newptr, proctable->pt_v, proctable->pt_num*sizeof(*proctable->pt_v));
 			kfree(proctable->pt_v);
 		}
-		proctable->pt_v = (struct proctable_entry **)newptr;
+		proctable->pt_v = newptr;
 		proctable->pt_size = new_size;
 	}
 	return 0;

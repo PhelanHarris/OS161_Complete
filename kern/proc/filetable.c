@@ -36,8 +36,8 @@ filetable_create()
 	in_str = kstrdup("con:");
 	result = vfs_open(in_str, O_RDONLY, 0, &in_vn);
 	if (result) {
-		kfree(in_str);
 		vfs_close(in_vn);
+		kfree(in_str);
 		return NULL;
 	}
 	
@@ -45,10 +45,10 @@ filetable_create()
 	out_str = kstrdup("con:");
 	result = vfs_open(out_str, O_WRONLY, 0, &out_vn);
 	if (result) {
-		kfree(in_str);
-		kfree(out_str);
 		vfs_close(in_vn);
 		vfs_close(out_vn);
+		kfree(in_str);
+		kfree(out_str);
 		return NULL;
 	}
 
@@ -56,12 +56,12 @@ filetable_create()
 	err_str = kstrdup("con:");
 	result = vfs_open(err_str, O_WRONLY, 0, &err_vn);
 	if (result) {
-		kfree(in_str);
-		kfree(out_str);
-		kfree(err_str);
 		vfs_close(in_vn);
 		vfs_close(out_vn);
 		vfs_close(err_vn);
+		kfree(in_str);
+		kfree(out_str);
+		kfree(err_str);
 		return NULL;
 	}
 
@@ -116,6 +116,8 @@ int
 filetable_clone(struct filetable *ft, struct filetable *ft_new)
 {
 	// Copy file pointers
+	lock_acquire(ft->ft_lock);
+	lock_acquire(ft_new->ft_lock);
 	unsigned i;
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
@@ -123,6 +125,8 @@ filetable_clone(struct filetable *ft, struct filetable *ft_new)
 			ft->ft_arr[i]->f_refcount++;
 		}
 	}
+	lock_release(ft_new->ft_lock);
+	lock_release(ft->ft_lock);
 
 	return 0;
 }
@@ -188,8 +192,16 @@ filetable_dupfd(struct filetable *ft, unsigned fd_old, unsigned fd_new)
 {
 	struct file *f = NULL;
 
-	if (fd_old > OPEN_MAX || fd_new > OPEN_MAX) return EBADF;
-	KASSERT(ft->ft_arr[fd_new] == NULL);
+	// Check both fd's
+	if (fd_old >= OPEN_MAX || fd_new >= OPEN_MAX)
+		return EBADF;
+
+	// Self-dup does nothing
+	if (fd_old == fd_new)
+		return 0;
+
+	// Close new fd if open (ignore errors)
+	filetable_remove(ft, fd_new);
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
@@ -223,7 +235,8 @@ int
 filetable_remove(struct filetable *ft, unsigned fd) {
 	struct file *f = NULL;
 
-	if (fd >= OPEN_MAX) return EBADF;
+	if (fd >= OPEN_MAX)
+		return EBADF;
 
 	// Make atomic
 	lock_acquire(ft->ft_lock);
