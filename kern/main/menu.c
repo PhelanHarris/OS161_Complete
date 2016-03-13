@@ -82,7 +82,7 @@ void
 cmd_progthread(void *ptr, unsigned long nargs)
 {
 	char **args = ptr;
-	char progname[128];
+	char *progname = kmalloc(sizeof(char) * 128); // will be freed in runprogram
 	int result;
 
 	KASSERT(nargs >= 1);
