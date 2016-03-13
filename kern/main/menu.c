@@ -82,14 +82,10 @@ void
 cmd_progthread(void *ptr, unsigned long nargs)
 {
 	char **args = ptr;
-	char *progname = kmalloc(sizeof(char) * 128); // will be freed in runprogram
+	char progname[128];// = kmalloc(sizeof(char) * 128); // will be freed in runprogram
 	int result;
 
 	KASSERT(nargs >= 1);
-
-	if (nargs > 2) {
-		kprintf("Warning: argument passing from menu not supported\n");
-	}
 
 	/* Hope we fit. */
 	KASSERT(strlen(args[0]) < sizeof(char) * 128);

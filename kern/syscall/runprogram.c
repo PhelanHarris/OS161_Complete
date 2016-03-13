@@ -64,7 +64,8 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
-		kfree(progname);
+		if (oldas != NULL)
+			kfree(progname);
 		return result;
 	}
 
@@ -72,7 +73,8 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	as = as_create();
 	if (as == NULL) {
 		vfs_close(v);
-		kfree(progname);
+		if (oldas != NULL)
+			kfree(progname);
 		return ENOMEM;
 	}
 
@@ -97,8 +99,8 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 			// reactivate the old address space before returning
 			proc_setas(oldas);
 			as_activate();
+			kfree(progname);
 		}
-		kfree(progname);
 		vfs_close(v);
 		return result;
 	}
@@ -119,19 +121,20 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 			// reactivate the old address space before returning
 			proc_setas(oldas);
 			as_activate();
+			kfree(progname);
+
 		}
-		kfree(progname);
 		return result;
 	}
 
-	int arglengths[argc];
+	int *arglengths = kmalloc(sizeof(int) * argc);
 	int total_len = 0;
-	userptr_t arg_ptrs[argc + 1];
+	userptr_t *arg_ptrs = kmalloc(sizeof(userptr_t) * (argc + 1));
 
 	int i;
 	for (i = 0; i < argc; i++){
 		arglengths[i] = (strlen(args[i])+1)*sizeof(char);
-		total_len += arglengths[i] + ((4 - arglengths[i] %4) % 4);
+		total_len += arglengths[i] + ((4 - arglengths[i] % 4) % 4);
 	}
 
 	// make space on the stack for arguments
@@ -153,11 +156,25 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 		arg_dest += sizeof(char*);
 
 		// increment the argval_dest by the length of the last argument (padded)
+		//kprintf("argval_dest: %d", (int)argval_dest);
 		argval_dest += arglengths[i] + ((4 - arglengths[i] % 4) % 4);
+		//kprintf(", argval_dest after add: %d\n", (int)argval_dest);
 	}
 
+	if (oldas != NULL){
+		as_destroy(oldas);
+		for (i = 0; i < argc; i++){
+			kfree(args[i]);
+		}
+	}
 
-	kfree(progname);
+	if (oldas != NULL){
+		kfree(progname);
+		as_destroy(oldas);
+	}
+
+	kfree(arglengths);
+	kfree(arg_ptrs);
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t)stackptr /*userspace addr of argv*/,
