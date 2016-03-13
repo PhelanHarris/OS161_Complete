@@ -30,6 +30,8 @@
 #ifndef _TEST_H_
 #define _TEST_H_
 
+#include <addrspace.h>
+
 /*
  * Declarations for test code and other miscellaneous high-level
  * functions.
@@ -70,7 +72,7 @@ int malloctest4(int, char **);
 int nettest(int, char **);
 
 /* Routine for running a user-level program. */
-int runprogram(char *progname);
+int runprogram(char *progname, int argc, char** args, struct addrspace* oldas);
 
 /* Kernel menu system. */
 void menu(char *argstr);

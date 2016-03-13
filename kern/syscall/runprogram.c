@@ -44,6 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <copyinout.h>
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -52,27 +53,31 @@
  * Calls vfs_open on progname and thus may destroy it.
  */
 int
-runprogram(char *progname, int argc, char** args, addrspace* oldas)
+runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 {
 	struct addrspace *as;
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
+	size_t actual;
 	int result;
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
+		kfree(progname);
 		return result;
 	}
-
-	/* We should be a new process. */
-	KASSERT(proc_getas() == NULL);
 
 	/* Create a new address space. */
 	as = as_create();
 	if (as == NULL) {
 		vfs_close(v);
+		kfree(progname);
 		return ENOMEM;
+	}
+
+	if (oldas != NULL){
+		as_deactivate();
 	}
 
 	/* Switch to it and activate it. */
@@ -82,7 +87,18 @@ runprogram(char *progname, int argc, char** args, addrspace* oldas)
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
 	if (result) {
-		/* p_addrspace will go away when curproc is destroyed */
+		/* p_addrspace will go away when curproc is destroyed,
+		but if we are coming from execv, we need to restore 
+		the old address space */
+		if (oldas != NULL){
+			// destroy the new address space
+			as_deactivate();
+			as_destroy(as);
+			// reactivate the old address space before returning
+			proc_setas(oldas);
+			as_activate();
+		}
+		kfree(progname);
 		vfs_close(v);
 		return result;
 	}
@@ -93,12 +109,58 @@ runprogram(char *progname, int argc, char** args, addrspace* oldas)
 	/* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);
 	if (result) {
-		/* p_addrspace will go away when curproc is destroyed */
+		/* p_addrspace will go away when curproc is destroyed,
+		but if we are coming from execv, we need to restore 
+		the old address space */
+		if (oldas != NULL){
+			// destroy the new address space
+			as_deactivate();
+			as_destroy(as);
+			// reactivate the old address space before returning
+			proc_setas(oldas);
+			as_activate();
+		}
+		kfree(progname);
 		return result;
 	}
 
+	int arglengths[argc];
+	int total_len = 0;
+	userptr_t arg_ptrs[argc + 1];
+
+	int i;
+	for (i = 0; i < argc; i++){
+		arglengths[i] = (strlen(args[i])+1)*sizeof(char);
+		total_len += arglengths[i] + ((4 - arglengths[i] %4) % 4);
+	}
+
+	// make space on the stack for arguments
+	stackptr -= (argc+1)*4 + total_len;
+
+	userptr_t arg_dest = (userptr_t) stackptr;
+	userptr_t argval_dest = (userptr_t) stackptr + (argc+1)*4;
+
+
+
+	// copy out string arguments back to user space
+	for (i = 0; i < argc; i++){
+		// copy out the string array values
+		copyoutstr(args[i], argval_dest, arglengths[i], &actual);
+		arg_ptrs[i] = (userptr_t) argval_dest;
+		
+		// copy out the user pointer to the string
+		copyout(&arg_ptrs[i], arg_dest, sizeof(char*));
+		arg_dest += sizeof(char*);
+
+		// increment the argval_dest by the length of the last argument (padded)
+		argval_dest += arglengths[i] + ((4 - arglengths[i] % 4) % 4);
+	}
+
+
+	kfree(progname);
+
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, (userptr_t)stackptr /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
 			  stackptr, entrypoint);
 

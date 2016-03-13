@@ -82,7 +82,7 @@ void
 cmd_progthread(void *ptr, unsigned long nargs)
 {
 	char **args = ptr;
-	char *progname = kmalloc(sizeof(char) * 128); // will be freed in runprogram
+	char progname[128];// = kmalloc(sizeof(char) * 128); // will be freed in runprogram
 	int result;
 
 	KASSERT(nargs >= 1);
@@ -96,7 +96,7 @@ cmd_progthread(void *ptr, unsigned long nargs)
 
 	strcpy(progname, args[0]);
 
-	result = runprogram(progname);
+	result = runprogram(progname, (int)nargs, ptr, NULL);
 	if (result) {
 		kprintf("Running program %s failed: %s\n", args[0],
 			strerror(result));
