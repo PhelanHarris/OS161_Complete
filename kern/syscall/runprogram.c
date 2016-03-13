@@ -141,9 +141,9 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 		return result;
 	}
 
-	size_t arglengths[argc];
+	size_t *arglengths = kmalloc(sizeof(size_t)*argc);
 	int total_len = 0;
-	userptr_t arg_ptrs[argc + 1];
+	userptr_t *arg_ptrs = kmalloc(sizeof(userptr_t)*(argc + 1));
 
 	for (i = 0; i < argc; i++){
 		arglengths[i] = (strlen(args[i])+1)*sizeof(char);
@@ -155,8 +155,6 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 
 	userptr_t arg_dest = (userptr_t) stackptr;
 	userptr_t argval_dest = (userptr_t) stackptr + (argc+1)*4;
-
-
 
 	// copy out string arguments back to user space
 	for (i = 0; i < argc; i++){
@@ -173,6 +171,8 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 		argval_dest += arglengths[i] + ((4 - arglengths[i] % 4) % 4);
 		//kprintf(", argval_dest after add: %d\n", (int)argval_dest);
 	}
+	arg_ptrs[argc] = NULL;
+	copyout(&arg_ptrs[argc], arg_dest, sizeof(char*));
 
 	if (oldas != NULL){
 		kfree(progname);
@@ -181,6 +181,8 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 			kfree(args[i]);
 		}
 	}
+	kfree(arglengths);
+	kfree(arg_ptrs);
 
 	/* Warp to user mode. */
 	enter_new_process(argc /*argc*/, (userptr_t)stackptr /*userspace addr of argv*/,

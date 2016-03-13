@@ -41,10 +41,6 @@ sys_execv(const char *program, char **args)
 	if (kprogram == NULL){
 		return ENOMEM;
 	}
-	
-	
-
-	argc = 0;
 
 	size_t total_arglen = 0;
 	while (args[argc] != NULL){
@@ -56,7 +52,7 @@ sys_execv(const char *program, char **args)
 		return E2BIG;
 	}
 
-	char *kargs[argc + 1];
+	char *kargs[argc];
 	size_t actual = 0;
 	int i;
 	for (i = 0; i < argc; i++){
@@ -80,8 +76,6 @@ sys_execv(const char *program, char **args)
 			return result;
 		}
 	}
-	// null terminate the array of args
-	kargs[argc] = NULL;
 
 	// pass the arguments to runprogram now that 
 	// they have been copied to kernel space.
