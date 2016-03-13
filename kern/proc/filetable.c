@@ -36,8 +36,6 @@ filetable_create()
 	in_str = kstrdup("con:");
 	result = vfs_open(in_str, O_RDONLY, 0, &in_vn);
 	if (result) {
-		vfs_close(in_vn);
-		kfree(in_str);
 		return NULL;
 	}
 	
@@ -47,8 +45,6 @@ filetable_create()
 	if (result) {
 		vfs_close(in_vn);
 		vfs_close(out_vn);
-		kfree(in_str);
-		kfree(out_str);
 		return NULL;
 	}
 
@@ -58,40 +54,56 @@ filetable_create()
 	if (result) {
 		vfs_close(in_vn);
 		vfs_close(out_vn);
-		vfs_close(err_vn);
-		kfree(in_str);
-		kfree(out_str);
-		kfree(err_str);
 		return NULL;
 	}
 
-	// Init structs
+	// Init filetable
 	ft = (struct filetable *) kmalloc(sizeof(struct filetable));
+	if (ft == NULL) {
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		vfs_close(err_vn);
+		return NULL;
+	}
+
+	// Init array
 	ft->ft_arr = (struct file **) kmalloc(sizeof(struct file *)*OPEN_MAX);
+	if (ft->ft_arr == NULL) {
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		vfs_close(err_vn);
+		kfree(ft);
+		return NULL;
+	}
+
+	// Fill all values with NULL
 	for (i = 0; i < OPEN_MAX; i++){
 		ft->ft_arr[i] = NULL;
 	}
 
+	// Create lock
 	ft->ft_lock = lock_create("filetablelock");
+	if (ft->ft_lock == NULL) {
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		vfs_close(err_vn);
+		kfree(ft);
+		kfree(ft->ft_arr);
+	}
 	ft->ft_size = 0;
 
 	// Add standard streams
 	unsigned fd_ret = 0;
 	result = filetable_add(ft, in_vn, O_RDONLY, &fd_ret);
+	result += filetable_add(ft, out_vn, O_WRONLY, &fd_ret);
+	result += filetable_add(ft, err_vn, O_WRONLY, &fd_ret);
 	if (result) {
-		filetable_destroy(ft);
-		return NULL;
-	}
-
-	result = filetable_add(ft, out_vn, O_WRONLY, &fd_ret);
-	if (result) {
-		filetable_destroy(ft);
-		return NULL;
-	}
-
-	result = filetable_add(ft, err_vn, O_WRONLY, &fd_ret);
-	if (result) {
-		filetable_destroy(ft);
+		vfs_close(in_vn);
+		vfs_close(out_vn);
+		vfs_close(err_vn);
+		lock_destroy(ft->ft_lock);
+		kfree(ft->ft_arr);
+		kfree(ft);
 		return NULL;
 	}
 
@@ -101,6 +113,7 @@ filetable_create()
 void
 filetable_destroy(struct filetable *ft)
 {
+	// Close all files
 	unsigned i;
 	for (i = 0; i < OPEN_MAX; ++i) {
 		if (ft->ft_arr[i] != NULL) {
@@ -110,6 +123,7 @@ filetable_destroy(struct filetable *ft)
 
 	lock_destroy(ft->ft_lock);
 	kfree(ft->ft_arr);
+	kfree(ft);
 }
 
 int
@@ -169,6 +183,10 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 
 	// Create new file object
 	f = (struct file *) kmalloc(sizeof(struct file));
+	if (f == NULL) {
+		lock_release(ft->ft_lock);
+		return ENOMEM;		
+	}
 	f->f_vn = vn;
 	f->f_flags = flags;
 	f->f_cursor = 0;
