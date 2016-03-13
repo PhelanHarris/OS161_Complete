@@ -71,6 +71,7 @@ int sys___getcwd(char *buf, size_t buflen, int *len);
 
 // process related syscalls
 int sys_fork(struct trapframe *tf, pid_t *pid_ret);
+int sys_execv(const char *program, char **args);
 void sys__exit(int exitcode);
 int sys_waitpid(pid_t pid, userptr_t status, int options);
 int sys_getpid(pid_t *pid_ret);
