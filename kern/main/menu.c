@@ -82,7 +82,7 @@ void
 cmd_progthread(void *ptr, unsigned long nargs)
 {
 	char **args = ptr;
-	char progname[128];// = kmalloc(sizeof(char) * 128); // will be freed in runprogram
+	char *progname = kmalloc(sizeof(char) * 128); // will be freed in runprogram
 	int result;
 
 	KASSERT(nargs >= 1);
@@ -92,7 +92,7 @@ cmd_progthread(void *ptr, unsigned long nargs)
 	}
 
 	/* Hope we fit. */
-	KASSERT(strlen(args[0]) < sizeof(progname));
+	KASSERT(strlen(args[0]) < sizeof(char) * 128);
 
 	strcpy(progname, args[0]);
 
