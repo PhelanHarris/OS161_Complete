@@ -11,6 +11,7 @@
 #include <synch.h>
 #include <copyinout.h> 
 #include <kern/errno.h>
+#include <kern/wait.h>
 
 int
 sys_waitpid(pid_t pid, userptr_t status, int options)

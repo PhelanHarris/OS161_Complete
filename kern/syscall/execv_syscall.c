@@ -30,12 +30,12 @@ sys_execv(const char *program, char **args)
 		return EFAULT;
 	}
 	else {
-		kprogram = kmalloc(sizeof(char) * (strlen(program) + 1));
+		kprogram = kmalloc(sizeof(char) * PATH_MAX);
 		if (kprogram == NULL){
 			return ENOMEM;
 		}
 		// copy program name into kernel space
-		result = copyinstr((const_userptr_t)program, kprogram, sizeof(char) * (strlen(program) + 1), &programlen);
+		result = copyinstr((const_userptr_t)program, kprogram, sizeof(char) * PATH_MAX, &programlen);
 		if (result){
 			kfree(kprogram);
 			return result;
@@ -53,8 +53,21 @@ sys_execv(const char *program, char **args)
 		return E2BIG;
 	}
 
-	char *kargs[argc];
+	char *kargs = kmalloc(sizeof(char) * ARG_MAX);
+	if (kargs == NULL){
+		kfree(kprogram);
+		return ENOMEM;
+	}
+	
 	size_t actual = 0;
+	while (args[argc] != NULL && total_arglen < ARG_MAX) {
+		result = copyinstr(args[argc], kargs + total_arglen, ARG_MAX - total_arglen, &actual);
+		if (result){
+			kfree(kprogram);
+			return result;
+		}
+		total_arglen = actual + ((4 - actual % 4) % 4);
+	}
 	int i;
 	for (i = 0; i < argc; i++){
 		

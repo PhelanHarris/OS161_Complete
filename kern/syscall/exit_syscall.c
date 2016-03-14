@@ -24,6 +24,7 @@ sys__exit(int exitcode)
 	// Update exit code
 	lock_acquire(pte->pte_lock);
 	pte->pte_running = false;
+	if (exitcode)
 	pte->pte_exitcode = exitcode;
 
 	// Broadcast
