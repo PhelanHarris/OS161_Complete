@@ -174,8 +174,7 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 	}
 
 	int result = getLowestIndex(ft);
-	if (result == -1){
-		KASSERT(result != -1);
+	if (result == -1) {
 		lock_release(ft->ft_lock);
 		return EMFILE;
 	}
@@ -192,6 +191,11 @@ filetable_add(struct filetable *ft, struct vnode *vn, int flags, unsigned *fd_re
 	f->f_cursor = 0;
 	f->f_refcount = 1;
 	f->f_lock = lock_create("filelock"); // name is not important
+	if (f->f_lock == NULL) {
+		kfree(f);
+		lock_release(ft->ft_lock);
+		return ENOMEM;
+	}
 
 	// Add file object to filetable
 	ft->ft_arr[*fd_ret] = f;
