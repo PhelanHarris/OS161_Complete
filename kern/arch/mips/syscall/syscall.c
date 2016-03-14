@@ -86,7 +86,6 @@ syscall(struct trapframe *tf)
 	int32_t retval;
 	uint32_t retval2;
 	off_t retval64;
-	//ssize_t retval_ssize_t;
 	off_t arg64;
 	int arg4;
 	int err;

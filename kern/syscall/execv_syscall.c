@@ -61,10 +61,20 @@ sys_execv(const char *program, char **args)
 		kfree(kprogram);
 		return ENOMEM;
 	}
-		
+	
+	// Check pointer
+	char **temp = kmalloc(sizeof(char *));
+	result = copyin((userptr_t) args, temp, 1);
+	if (result) {
+		kfree(arglengths);
+		kfree(kargs);
+		kfree(kprogram);
+		return result;		
+	}
+
 	// Copy args to kernel space
 	size_t actual = 0;
-	do {
+	while (*(args+argc) != NULL && total_arglen < ARG_MAX) {
 		result = copyinstr((userptr_t) *(args+argc), kargs + total_arglen,
 			ARG_MAX - total_arglen, &actual);
 
@@ -78,7 +88,7 @@ sys_execv(const char *program, char **args)
 		arglengths[argc] = actual + ((4 - actual % 4) % 4);
 		total_arglen += arglengths[argc];
 		argc++;
-	} while (*(args+argc) != NULL && total_arglen < ARG_MAX);
+	}
 
 	// Open the file
 	result = vfs_open(kprogram, O_RDONLY, 0, &v);
@@ -141,7 +151,7 @@ sys_execv(const char *program, char **args)
 
 	// Copy out entire string of arguments
 	userptr_t argval_dest = (userptr_t) stackptr + (argc+1)*4;
-	copyoutstr(kargs, argval_dest, total_arglen, &actual);
+	copyout(kargs, argval_dest, total_arglen);
 
 	// Copy out addresses of each string argument
 	userptr_t arg_dest = (userptr_t) stackptr;
