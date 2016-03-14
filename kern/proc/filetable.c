@@ -44,7 +44,6 @@ filetable_create()
 	result = vfs_open(out_str, O_WRONLY, 0, &out_vn);
 	if (result) {
 		vfs_close(in_vn);
-		vfs_close(out_vn);
 		return NULL;
 	}
 

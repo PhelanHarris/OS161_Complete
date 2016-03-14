@@ -53,7 +53,7 @@
  * Calls vfs_open on progname and thus may destroy it.
  */
 int
-runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
+runprogram(char *progname, int argc, char **args)
 {
 	struct addrspace *as;
 	struct vnode *v;
@@ -65,12 +65,6 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
 	if (result) {
-		if (oldas != NULL){
-			kfree(progname);
-			for (i = 0; i < argc; i++){
-				kfree(args[i]);
-			}
-		}
 		return result;
 	}
 
@@ -78,17 +72,7 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	as = as_create();
 	if (as == NULL) {
 		vfs_close(v);
-		if (oldas != NULL) {
-			kfree(progname);
-			for (i = 0; i < argc; i++){
-				kfree(args[i]);
-			}
-		}
 		return ENOMEM;
-	}
-
-	if (oldas != NULL){
-		as_deactivate();
 	}
 
 	/* Switch to it and activate it. */
@@ -98,21 +82,7 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
 	if (result) {
-		/* p_addrspace will go away when curproc is destroyed,
-		but if we are coming from execv, we need to restore 
-		the old address space */
-		if (oldas != NULL){
-			// destroy the new address space
-			as_deactivate();
-			as_destroy(as);
-			// reactivate the old address space before returning
-			proc_setas(oldas);
-			as_activate();
-			kfree(progname);
-			for (i = 0; i < argc; i++){
-				kfree(args[i]);
-			}
-		}
+		/* p_addrspace will go away when curproc is destroyed */
 		vfs_close(v);
 		return result;
 	}
@@ -123,21 +93,6 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	/* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);
 	if (result) {
-		/* p_addrspace will go away when curproc is destroyed,
-		but if we are coming from execv, we need to restore 
-		the old address space */
-		if (oldas != NULL){
-			// destroy the new address space
-			as_deactivate();
-			as_destroy(as);
-			// reactivate the old address space before returning
-			proc_setas(oldas);
-			as_activate();
-			kfree(progname);
-			for (i = 0; i < argc; i++){
-				kfree(args[i]);
-			}
-		}
 		return result;
 	}
 
@@ -174,13 +129,6 @@ runprogram(char *progname, int argc, char** args, struct addrspace* oldas)
 	arg_ptrs[argc] = NULL;
 	copyout(&arg_ptrs[argc], arg_dest, sizeof(char*));
 
-	if (oldas != NULL){
-		kfree(progname);
-		as_destroy(oldas);
-		for (i = 0; i < argc; i++){
-			kfree(args[i]);
-		}
-	}
 	kfree(arglengths);
 	kfree(arg_ptrs);
 

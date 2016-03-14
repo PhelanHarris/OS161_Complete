@@ -72,7 +72,7 @@ int malloctest4(int, char **);
 int nettest(int, char **);
 
 /* Routine for running a user-level program. */
-int runprogram(char *progname, int argc, char** args, struct addrspace* oldas);
+int runprogram(char *progname, int argc, char** args);
 
 /* Kernel menu system. */
 void menu(char *argstr);
