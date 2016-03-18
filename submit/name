@@ -1,2 +1,42 @@
 36154136 Phelan Harris
 12984134 Mesbah	Mowlavi
+
+Contributions:
+
+
+---------- ASST 4 ----------
+Phelan:
+- syscalls: read, write, open, lseek.
+- Passed arguments to each syscall
+- Completed even numbered code reading excercises
+Mesbah:
+- syscalls: dup2, chdir, close, getcwd.
+- Implemented the filetable
+- Completed odd numbered code reading excercises
+Together:
+- Debugged everything
+----------------------------
+
+---------- ASST 5 ----------
+Phelan:
+- syscalls: fork, execv.
+- Modified runprogram() to allow arguments to be passed
+- Made some other small menu changes
+- Passed arguments to each syscall
+Mesbah
+- syscalls: waitpid, exit, getpid.
+- Implemented the proctable
+- Fixed mem leaks in the filetable and in syscalls from assignment 4
+- Synchronized filetable and proctable
+Together:
+- rewrote the argument passing in execv to save all parameters into one string,
+  in order to get some badcalls to pass, and to get the last test in bigexec to
+  pass.
+- Added error checking in the syscalls to pass the badcall tests
+- Debugged everything
+----------------------------
+
+---------- ASST 6 ----------
+
+
+----------------------------
