@@ -36,6 +36,14 @@
  * You'll probably want to add stuff here.
  */
 
+ struct coremap_entry {
+ 	struct addrspace *as;
+ 	vaddr_t va;
+ 	paddr_t pa;
+
+ 	int state;
+ };
+
 
 #include <machine/vm.h>
 

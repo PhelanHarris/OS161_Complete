@@ -1,8 +1,11 @@
 #include <vm.h>
 
+// coremap struct
+struct coremap_entry **coremap;
+
 /* Initialization function */
 void vm_bootstrap(void){
-
+	PADDR_TO_KVADDR();
 }
 
 /* Fault handling function called by trap code */
