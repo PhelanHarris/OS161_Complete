@@ -36,10 +36,13 @@
  * You'll probably want to add stuff here.
  */
 
+#define VM_STATE_FREE 0
+#define VM_STATE_CLEAN 1
+#define VM_STATE_DIRTY 2
+
  struct coremap_entry {
  	struct addrspace *as;
  	vaddr_t va;
- 	paddr_t pa;
 
  	int state;
  };
