@@ -17,16 +17,16 @@ static paddr_t coremap_base;
 static paddr_t coremap_end;
 static unsigned coremap_numPages;
 
+static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
 /* Initialization function */
 void
 vm_bootstrap (void)
 {
 	paddr_t first_addr, last_addr;
-	int num_addr;
 
 	// make sure this is only called once
-	ASSERT(vm_bootstrapped == false);
+	KASSERT(vm_bootstrapped == false);
 
 	// get the first and last physical addresses
 	first_addr = ram_getfirstfree();
@@ -43,10 +43,10 @@ vm_bootstrap (void)
 	coremap_numPages -= coremap_size / PAGE_SIZE;
 
 	// initialize the coremap entries
-	int i;
-	for (i = 0; i < num_pages; i++) {
+	unsigned i;
+	for (i = 0; i < coremap_numPages; i++) {
 		coremap[i].as = NULL;
-		coremap[i].va = NULL;
+		coremap[i].va = 0;
 		coremap[i].block_size = 0;
 		coremap[i].state = VM_STATE_FREE;
 	}
@@ -61,7 +61,9 @@ vm_bootstrap (void)
 int
 vm_fault (int faulttype, vaddr_t faultaddress)
 {
-
+	(void) faulttype;
+	(void) faultaddress;
+	return ENOSYS;
 }
 
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
@@ -83,7 +85,7 @@ alloc_kpages(unsigned npages)
 			if (coremap[curPage].state == VM_STATE_FREE){
 				nfree++;
 				if (nfree == npages){
-					int i;
+					unsigned i;
 					for (i = curPage; i > curPage - npages; i--){
 						coremap[i].state = VM_STATE_DIRTY;
 						coremap[i].block_size = npages;
@@ -112,7 +114,7 @@ free_kpages(vaddr_t addr)
 
 	unsigned cm_index = (paddr - coremap_base) / PAGE_SIZE;
 	unsigned size = coremap[cm_index].block_size;
-	int i;
+	unsigned i;
 	for (i = cm_index; i < size; i++){
 		coremap[i].state = VM_STATE_FREE;
 		coremap[i].block_size = 0;
@@ -127,7 +129,7 @@ vm_tlbshootdown_all(void)
 }
 
 void
-vm_tlbshootdown(const struct tlbshootdown *)
-{
-
+vm_tlbshootdown(const struct tlbshootdown *arg)
+{	
+	(void) arg;
 }
