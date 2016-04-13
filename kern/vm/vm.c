@@ -47,6 +47,7 @@ vm_bootstrap (void)
 	for (i = 0; i < num_pages; i++) {
 		coremap[i].as = NULL;
 		coremap[i].va = NULL;
+		coremap[i].block_size = 0;
 		coremap[i].state = VM_STATE_FREE;
 	}
 
@@ -85,6 +86,7 @@ alloc_kpages(unsigned npages)
 					int i;
 					for (i = curPage; i > curPage - npages; i--){
 						coremap[i].state = VM_STATE_DIRTY;
+						coremap[i].block_size = npages;
 						// TODO: change other coremap entry fields
 					}
 					addr = ((curPage + 1 - npages) * PAGE_SIZE) + coremap_base;
@@ -106,7 +108,15 @@ alloc_kpages(unsigned npages)
 void
 free_kpages(vaddr_t addr)
 {
+	paddr_t paddr = KVADDR_TO_PADDR(addr);
 
+	unsigned cm_index = (paddr - coremap_base) / PAGE_SIZE;
+	unsigned size = coremap[cm_index].block_size;
+	int i;
+	for (i = cm_index; i < size; i++){
+		coremap[i].state = VM_STATE_FREE;
+		coremap[i].block_size = 0;
+	}
 }
 
 /* TLB shootdown handling called from interprocessor_interrupt */
