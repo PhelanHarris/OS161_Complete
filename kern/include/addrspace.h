@@ -67,6 +67,17 @@ struct addrspace {
 #endif
 };
 
+/* pagetable related things */
+#define PAGETABLE_SIZE 1024
+#define PAGETABLE_L1 0
+#define PAGETABLE_L2 1
+
+struct pagetable_entry {
+  paddr_t paddr;
+  bool mapped;
+};
+
+
 /*
  * Functions in addrspace.c:
  *

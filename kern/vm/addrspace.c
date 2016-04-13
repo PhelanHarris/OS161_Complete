@@ -33,7 +33,6 @@
 #include <addrspace.h>
 #include <proc.h>
 #include <vm.h>
-#include <pagetable.h>
 #include <synch.h>
 
 /*
@@ -52,13 +51,18 @@ as_create(void)
 		return NULL;
 	}
 
-	as->pagetable = pagetable_create();
-	as->heap_start = 0;
-	as->heap_end = 0;
+	as->pagetable = kmalloc(sizeof(struct pagetable_entry*) * 2);
+	as->pagetable[PAGETABLE_L1] = kmalloc(sizeof(struct pagetable_entry) * PAGETABLE_SIZE);
+	as->pagetable[PAGETABLE_L2] = NULL;
+
 	int i;
-	for (i = 0; i < PAGETABLE_SIZE; i++){
+	for (i = 0; i < PAGETABLE_SIZE; i++) {
+		as->pagetable[PAGETABLE_L1][i].mapped = false;
 		as->pagetable_locks[i] = lock_create("ptl");
 	}
+
+	as->heap_start = 0;
+	as->heap_end = 0;
 
 	return as;
 }
@@ -86,7 +90,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	pagetable_destroy(as->pagetable);
+	int lvl;
+	for (lvl = 0; lvl < 2; lvl++) {
+		// TODO: do stuff with physical page?
+		kfree(as->pagetable[lvl]);
+	}
+	kfree (as->pagetable);
 
 	kfree(as);
 }
