@@ -40,12 +40,12 @@
 #define VM_STATE_CLEAN 1
 #define VM_STATE_DIRTY 2
 
- struct coremap_entry {
- 	struct addrspace *as;
- 	vaddr_t va;
+struct coremap_entry {
+	struct addrspace *as;
+	vaddr_t va;
 
- 	int state;
- };
+	int state;
+};
 
 
 #include <machine/vm.h>
