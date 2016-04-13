@@ -340,9 +340,9 @@ file      proc/filetable.c
 #
 
 file      vm/kmalloc.c
-file 	  vm/vm.c
 
 optofffile dumbvm   vm/addrspace.c
+optofffile dumbvm	vm/vm.c
 
 #
 # Network
