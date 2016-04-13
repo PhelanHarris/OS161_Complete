@@ -91,6 +91,9 @@ alloc_kpages(unsigned npages)
 					break;
 				}
 			}
+			else{
+				nfree = 0;
+			}
 		}
 	}
 
