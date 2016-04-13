@@ -11,12 +11,16 @@
 
 // coremap struct
 struct coremap_entry *coremap;
+static bool vm_bootstrapped = false;
 
 
 /* Initialization function */
 void vm_bootstrap(void){
 	paddr_t first_addr, last_addr;
 	int num_addr;
+
+	// make sure this is only called once
+	ASSERT(vm_bootstrapped == false);
 
 	// get the first and last physical addresses
 	first_addr = ram_getfirstfree();
@@ -39,6 +43,8 @@ void vm_bootstrap(void){
 		coremap[i].va = NULL;
 		coremap[i].state = VM_STATE_FREE;
 	}
+
+	vm_bootstrapped = true;
 }
 
 /* Fault handling function called by trap code */
