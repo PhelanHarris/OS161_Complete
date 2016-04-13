@@ -33,6 +33,8 @@
 #include <addrspace.h>
 #include <proc.h>
 #include <vm.h>
+#include <pagetable.h>
+#include <synch.h>
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -50,9 +52,13 @@ as_create(void)
 		return NULL;
 	}
 
-	/*
-	 * Initialize as needed.
-	 */
+	as->pagetable = pagetable_create();
+	as->heap_start = 0;
+	as->heap_end = 0;
+	int i;
+	for (i = 0; i < PAGETABLE_SIZE; i++){
+		as->pagetable_locks[i] = lock_create("ptl");
+	}
 
 	return as;
 }
@@ -80,9 +86,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	/*
-	 * Clean up as needed.
-	 */
+	pagetable_destroy(as->pagetable);
 
 	kfree(as);
 }

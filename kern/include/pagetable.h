@@ -10,8 +10,8 @@ struct pagetable_entry {
 	bool mapped;
 };
 
-struct pagetable_entry *pagetable_create();
-void pagetable_destory(pagetable_entry *pt);
+struct pagetable_entry **pagetable_create(void);
+void pagetable_destroy(struct pagetable_entry **pt);
 void pagetable_get_entry(struct addrspace *as, vaddr_t vaddr);
 
 #endif /* _PAGETABLE_H_ */

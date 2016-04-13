@@ -1,10 +1,10 @@
 #include <pagetable.h>
 
 struct pagetable_entry **
-pagetable_create()
+pagetable_create(void)
 {
-	struct pagetable_entry **pt;
-	pt[PAGETABLE_L1] = kmalloc(sizeof(struct pagetable_entry) * 1PAGETABLE_SIZE024);
+	struct pagetable_entry **pt = kmalloc(sizeof(struct pagetable_entry*) * 2);
+	pt[PAGETABLE_L1] = kmalloc(sizeof(struct pagetable_entry) * PAGETABLE_SIZE);
 	pt[PAGETABLE_L2] = NULL;
 
 	int i;
@@ -16,13 +16,14 @@ pagetable_create()
 }
 
 void
-pagetable_destory(pagetable_entry *pt)
+pagetable_destroy(struct pagetable_entry **pt)
 {
 	int lvl, i;
 	for (lvl = 0; lvl < 2; lvl++) {
 		// TODO: do stuff with physical page?
 		kfree(pt[lvl]);
 	}
+	kfree (pt);
 }
 
 void
