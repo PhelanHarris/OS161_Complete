@@ -41,11 +41,8 @@
 #define VM_STATE_DIRTY 2
 
 struct coremap_entry {
- 	struct addrspace *as;
- 	vaddr_t va;
- 	unsigned block_size;
-
 	int state;
+ 	unsigned block_size;
 };
 
 

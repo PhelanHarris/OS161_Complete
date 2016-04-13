@@ -8,16 +8,19 @@
 #include <mips/tlb.h>
 #include <addrspace.h>
 #include <vm.h>
+#include <synch.h>
 
 // coremap struct
 struct coremap_entry *coremap;
 
-static bool vm_bootstrapped = false;
-static paddr_t coremap_base;
-static paddr_t coremap_end;
-static unsigned coremap_numPages;
+bool vm_bootstrapped = false;
+paddr_t coremap_base;
+paddr_t coremap_end;
+unsigned coremap_numPages;
 
-static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+struct lock *coremap_lock;
+
 
 /* Initialization function */
 void
@@ -25,33 +28,35 @@ vm_bootstrap (void)
 {
 	paddr_t first_addr, last_addr;
 
-	// make sure this is only called once
+	/* Make sure this is only called once */
 	KASSERT(vm_bootstrapped == false);
 
-	// get the first and last physical addresses
+	/* Initalize locks */
+	coremap_lock = lock_create("vm_coremap");
+
+	/* Get the first and last physical addresses */
 	first_addr = ram_getfirstfree();
 	last_addr = ram_getsize();
-	// put the coremap at the beginning of the physical memory
+
+	/* Put the coremap at the beginning of the physical memory */
 	coremap = (struct coremap_entry *) PADDR_TO_KVADDR(first_addr);
 	
-	// readjust where the first address is so that the coremap does not get
-	// overwritten
+	/* Re-adjust where the first address is so that the coremap does not get
+	   overwritten */
 	coremap_numPages = (last_addr - first_addr) / PAGE_SIZE;
 	unsigned coremap_size = coremap_numPages * sizeof(struct coremap_entry);
 	coremap_size = ROUNDUP(coremap_size, PAGE_SIZE);
 	first_addr += coremap_size;
 	coremap_numPages -= coremap_size / PAGE_SIZE;
 
-	// initialize the coremap entries
+	/* Initialize the coremap entries, one for each physical page */
 	unsigned i;
 	for (i = 0; i < coremap_numPages; i++) {
-		coremap[i].as = NULL;
-		coremap[i].va = 0;
 		coremap[i].block_size = 0;
 		coremap[i].state = VM_STATE_FREE;
 	}
 
-	// update global values
+	/* Update global values */
 	coremap_base = first_addr;
 	coremap_end = last_addr;
 	vm_bootstrapped = true;
@@ -71,14 +76,15 @@ vaddr_t
 alloc_kpages(unsigned npages)
 {
 	paddr_t addr = 0;
-	// if the vm hasn't bootstrapped, just steal memory
+	/* If the vm hasn't bootstrapped, just steal memory */
 	if (vm_bootstrapped == false){
 		spinlock_acquire(&stealmem_lock);
 		addr = ram_stealmem(npages);
 		spinlock_release(&stealmem_lock);
 
-	} // otherwise, look for a contiguous chunk of memory in the coremap
+	} /* Otherwise, look for a contiguous chunk of memory in the coremap */
 	else {
+		lock_acquire(coremap_lock);
 		unsigned nfree = 0;
 		unsigned curPage;
 		for (curPage = 0; curPage < coremap_numPages; curPage++){
@@ -89,7 +95,6 @@ alloc_kpages(unsigned npages)
 					for (i = curPage; i > curPage - npages; i--){
 						coremap[i].state = VM_STATE_DIRTY;
 						coremap[i].block_size = npages;
-						// TODO: change other coremap entry fields
 					}
 					addr = ((curPage + 1 - npages) * PAGE_SIZE) + coremap_base;
 					break;
@@ -99,6 +104,8 @@ alloc_kpages(unsigned npages)
 				nfree = 0;
 			}
 		}
+
+		lock_release(coremap_lock);
 	}
 
 	if (addr==0) {
