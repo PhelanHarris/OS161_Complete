@@ -10,55 +10,90 @@
 #include <vm.h>
 #include <synch.h>
 
-// coremap struct
+// Coremap struct
 struct coremap_entry *coremap;
 
-bool vm_bootstrapped = false;
+// Address bounds of memory
+paddr_t mem_first_addr;
+paddr_t mem_last_addr;
+
+// Address bounds of coremap
 paddr_t coremap_base;
 paddr_t coremap_end;
-unsigned coremap_num_pages;
 
+// Coremap dimensions
+unsigned coremap_num_pages;
+unsigned coremap_size;
+
+// Synchronizing stuff
 struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 struct lock *coremap_lock;
 
+// Bootstrap status
+bool vm_bootstrapped = false;
+
+
+static
+int
+get_cm_index_by_paddr(paddr_t paddr)
+{
+	int index = (paddr - mem_first_addr) / PAGE_SIZE;
+	KASSERT(index >= 0);
+	return index;
+}
+
+static
+paddr_t
+get_paddr_by_cm_index(int index)
+{
+	paddr_t paddr = mem_first_addr + (index * PAGE_SIZE);
+	KASSERT(paddr >= mem_first_addr);
+	return paddr;
+}
 
 /* Initialization function */
 void
 vm_bootstrap (void)
 {
-	paddr_t first_addr, last_addr;
-
 	/* Make sure this is only called once */
 	KASSERT(vm_bootstrapped == false);
 
 	/* Initalize locks */
 	coremap_lock = lock_create("vm_coremap");
 
-	/* Get the first and last physical addresses */
-	last_addr = ram_getsize();
-	first_addr = ram_getfirstfree();
+	/* Get the pointer to the size of the ram */
+	mem_first_addr = KVADDR_TO_PADDR(firstfree);
+	mem_last_addr = ram_getsize();
+	coremap_base = ram_getfirstfree();
 
 	/* Put the coremap at the beginning of the physical memory */
-	coremap = (struct coremap_entry *) PADDR_TO_KVADDR(first_addr);
+	coremap = (struct coremap_entry *) PADDR_TO_KVADDR(coremap_base);
+	coremap_num_pages = (coremap_base - mem_first_addr) / PAGE_SIZE;
 	
-	/* Re-adjust where the first address is so that the coremap does not get
-	   overwritten */
-	coremap_num_pages = (last_addr - first_addr) / PAGE_SIZE;
-	unsigned coremap_size = coremap_num_pages * sizeof(struct coremap_entry);
-	coremap_size = ROUNDUP(coremap_size, PAGE_SIZE);
-	first_addr += coremap_size;
-	coremap_num_pages -= coremap_size / PAGE_SIZE;
+	/* Compute size of coremap */
+	coremap_size = ROUNDUP(coremap_num_pages * sizeof(struct coremap_entry), PAGE_SIZE);
+	coremap_end = coremap_base + coremap_size;
+
+	/* Get index of coremap's page */
+	unsigned cmi_start = get_cm_index_by_paddr(coremap_base);
+	unsigned cmi_end = get_cm_index_by_paddr(coremap_end);
 
 	/* Initialize the coremap entries, one for each physical page */
 	unsigned i;
 	for (i = 0; i < coremap_num_pages; i++) {
 		coremap[i].block_size = 0;
-		coremap[i].state = VM_STATE_FREE;
+
+		/* Stolen memory is 'dirty', coremap region is 'fixed' */
+		if (i < cmi_start) {
+			coremap[i].state = VM_STATE_DIRTY;
+		} else if (i <= cmi_end) {
+			coremap[i].state = VM_STATE_FIXED;
+		} else {
+			coremap[i].state = VM_STATE_FREE;
+		}
 	}
 
-	/* Update global values */
-	coremap_base = first_addr;
-	coremap_end = last_addr;
+	/* Bootstrap complete */
 	vm_bootstrapped = true;
 }
 
@@ -70,23 +105,6 @@ vm_fault (int faulttype, vaddr_t faultaddress)
 	(void) faultaddress;
 	return ENOSYS;
 }
-
-int
-get_cm_index_by_paddr(paddr_t paddr)
-{
-	int index = (paddr - coremap_base) / PAGE_SIZE;
-	KASSERT(index >= 0);
-	return index;
-}
-
-paddr_t
-get_paddr_by_cm_index(int index)
-{
-	paddr_t paddr = coremap_base + (index * PAGE_SIZE);
-	KASSERT(paddr >= coremap_base);
-	return paddr;
-}
-
 
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t
@@ -100,8 +118,9 @@ alloc_kpages(unsigned npages)
 		spinlock_release(&stealmem_lock);
 
 	} else {
-	 	/* look for a contiguous chunk of memory in the coremap */
+	 	/* Look for a contiguous chunk of memory in the coremap */
 		lock_acquire(coremap_lock);
+
 		unsigned nfree = 0;
 		unsigned cur_page;
 		for (cur_page = 0; cur_page < coremap_num_pages; cur_page++) {
@@ -124,10 +143,8 @@ alloc_kpages(unsigned npages)
 		lock_release(coremap_lock);
 	}
 
-	if (addr==0) {
-		return 0;
-	}
-	return PADDR_TO_KVADDR(addr);
+	/* If an address was found, convert to a kvaddr */
+	return addr == 0 ? 0 : PADDR_TO_KVADDR(addr);
 }
 
 void
