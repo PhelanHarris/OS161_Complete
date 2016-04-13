@@ -16,7 +16,7 @@ struct coremap_entry *coremap;
 bool vm_bootstrapped = false;
 paddr_t coremap_base;
 paddr_t coremap_end;
-unsigned coremap_numPages;
+unsigned coremap_num_pages;
 
 struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 struct lock *coremap_lock;
@@ -43,15 +43,15 @@ vm_bootstrap (void)
 	
 	/* Re-adjust where the first address is so that the coremap does not get
 	   overwritten */
-	coremap_numPages = (last_addr - first_addr) / PAGE_SIZE;
-	unsigned coremap_size = coremap_numPages * sizeof(struct coremap_entry);
+	coremap_num_pages = (last_addr - first_addr) / PAGE_SIZE;
+	unsigned coremap_size = coremap_num_pages * sizeof(struct coremap_entry);
 	coremap_size = ROUNDUP(coremap_size, PAGE_SIZE);
 	first_addr += coremap_size;
-	coremap_numPages -= coremap_size / PAGE_SIZE;
+	coremap_num_pages -= coremap_size / PAGE_SIZE;
 
 	/* Initialize the coremap entries, one for each physical page */
 	unsigned i;
-	for (i = 0; i < coremap_numPages; i++) {
+	for (i = 0; i < coremap_num_pages; i++) {
 		coremap[i].block_size = 0;
 		coremap[i].state = VM_STATE_FREE;
 	}
@@ -82,25 +82,24 @@ alloc_kpages(unsigned npages)
 		addr = ram_stealmem(npages);
 		spinlock_release(&stealmem_lock);
 
-	} /* Otherwise, look for a contiguous chunk of memory in the coremap */
-	else {
+	} else {
+	 	/* look for a contiguous chunk of memory in the coremap */
 		lock_acquire(coremap_lock);
 		unsigned nfree = 0;
-		unsigned curPage;
-		for (curPage = 0; curPage < coremap_numPages; curPage++){
-			if (coremap[curPage].state == VM_STATE_FREE){
+		unsigned cur_page;
+		for (cur_page = 0; cur_page < coremap_num_pages; cur_page++) {
+			if (coremap[cur_page].state == VM_STATE_FREE){
 				nfree++;
-				if (nfree == npages){
+				if (nfree == npages ){
 					unsigned i;
-					for (i = curPage; i > curPage - npages; i--){
+					for (i = cur_page; i > cur_page - npages; i--) {
 						coremap[i].state = VM_STATE_DIRTY;
 						coremap[i].block_size = npages;
 					}
-					addr = ((curPage + 1 - npages) * PAGE_SIZE) + coremap_base;
+					addr = ((cur_page + 1 - npages) * PAGE_SIZE) + coremap_base;
 					break;
 				}
-			}
-			else{
+			} else {
 				nfree = 0;
 			}
 		}
@@ -122,7 +121,7 @@ free_kpages(vaddr_t addr)
 	unsigned cm_index = (paddr - coremap_base) / PAGE_SIZE;
 	unsigned size = coremap[cm_index].block_size;
 	unsigned i;
-	for (i = cm_index; i < size; i++){
+	for (i = cm_index; i < size; i++) {
 		coremap[i].state = VM_STATE_FREE;
 		coremap[i].block_size = 0;
 	}
