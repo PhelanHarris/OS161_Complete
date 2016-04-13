@@ -151,3 +151,12 @@ ram_getfirstfree(void)
 	firstpaddr = lastpaddr = 0;
 	return ret;
 }
+
+/* 
+ * Function to get the first location of memory after start.S is done
+ */
+paddr_t
+ram_getinitialaddr(void)
+{
+	return firstfree;
+}

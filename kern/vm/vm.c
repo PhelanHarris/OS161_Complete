@@ -62,13 +62,13 @@ vm_bootstrap (void)
 	coremap_lock = lock_create("vm_coremap");
 
 	/* Get the pointer to the size of the ram */
-	mem_first_addr = KVADDR_TO_PADDR(firstfree);
+	mem_first_addr = KVADDR_TO_PADDR(ram_getinitialaddr());
 	mem_last_addr = ram_getsize();
 	coremap_base = ram_getfirstfree();
 
 	/* Put the coremap at the beginning of the physical memory */
 	coremap = (struct coremap_entry *) PADDR_TO_KVADDR(coremap_base);
-	coremap_num_pages = (coremap_base - mem_first_addr) / PAGE_SIZE;
+	coremap_num_pages = (mem_last_addr - mem_first_addr) / PAGE_SIZE;
 	
 	/* Compute size of coremap */
 	coremap_size = ROUNDUP(coremap_num_pages * sizeof(struct coremap_entry), PAGE_SIZE);
@@ -155,7 +155,7 @@ free_kpages(vaddr_t vaddr)
 	int size = coremap[cm_index].block_size;
 	int i;
 	for (i = cm_index; i < size; i++) {
-		KASSERT(coremap[i].state != VM_STATE_FIXED)
+		KASSERT(coremap[i].state != VM_STATE_FIXED);
 		coremap[i].state = VM_STATE_FREE;
 		coremap[i].block_size = 0;
 	}
