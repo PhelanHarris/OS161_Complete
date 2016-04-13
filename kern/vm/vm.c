@@ -126,7 +126,7 @@ alloc_kpages(unsigned npages)
 		for (cur_page = 0; cur_page < coremap_num_pages; cur_page++) {
 			if (coremap[cur_page].state == VM_STATE_FREE){
 				nfree++;
-				if (nfree == npages ){
+				if (nfree == npages) {
 					unsigned i;
 					for (i = cur_page; i > cur_page - npages; i--) {
 						coremap[i].state = VM_STATE_DIRTY;
