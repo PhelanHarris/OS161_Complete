@@ -35,8 +35,8 @@ vm_bootstrap (void)
 	coremap_lock = lock_create("vm_coremap");
 
 	/* Get the first and last physical addresses */
-	first_addr = ram_getfirstfree();
 	last_addr = ram_getsize();
+	first_addr = ram_getfirstfree();
 
 	/* Put the coremap at the beginning of the physical memory */
 	coremap = (struct coremap_entry *) PADDR_TO_KVADDR(first_addr);
