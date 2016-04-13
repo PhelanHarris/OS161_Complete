@@ -71,6 +71,23 @@ vm_fault (int faulttype, vaddr_t faultaddress)
 	return ENOSYS;
 }
 
+int
+get_cm_index_by_paddr(paddr_t paddr)
+{
+	int index = (paddr - coremap_base) / PAGE_SIZE;
+	KASSERT(index >= 0);
+	return index;
+}
+
+paddr_t
+get_paddr_by_cm_index(int index)
+{
+	paddr_t paddr = coremap_base + (index * PAGE_SIZE);
+	KASSERT(paddr >= coremap_base);
+	return paddr;
+}
+
+
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t
 alloc_kpages(unsigned npages)
@@ -96,7 +113,7 @@ alloc_kpages(unsigned npages)
 						coremap[i].state = VM_STATE_DIRTY;
 						coremap[i].block_size = npages;
 					}
-					addr = ((cur_page + 1 - npages) * PAGE_SIZE) + coremap_base;
+					addr = get_paddr_by_cm_index(cur_page + 1 - npages);
 					break;
 				}
 			} else {
@@ -114,14 +131,14 @@ alloc_kpages(unsigned npages)
 }
 
 void
-free_kpages(vaddr_t addr)
+free_kpages(vaddr_t vaddr)
 {
-	paddr_t paddr = KVADDR_TO_PADDR(addr);
+	int cm_index = get_cm_index_by_paddr(KVADDR_TO_PADDR(vaddr));
 
-	unsigned cm_index = (paddr - coremap_base) / PAGE_SIZE;
-	unsigned size = coremap[cm_index].block_size;
-	unsigned i;
+	int size = coremap[cm_index].block_size;
+	int i;
 	for (i = cm_index; i < size; i++) {
+		KASSERT(coremap[i].state != VM_STATE_FIXED)
 		coremap[i].state = VM_STATE_FREE;
 		coremap[i].block_size = 0;
 	}

@@ -39,6 +39,7 @@
 #define VM_STATE_FREE 0
 #define VM_STATE_CLEAN 1
 #define VM_STATE_DIRTY 2
+#define VM_STATE_FIXED 3
 
 struct coremap_entry {
 	int state;
