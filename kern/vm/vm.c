@@ -11,7 +11,11 @@
 
 // coremap struct
 struct coremap_entry *coremap;
+
 static bool vm_bootstrapped = false;
+static paddr_t coremap_base;
+static paddr_t coremap_end;
+static unsigned coremap_numPages;
 
 
 /* Initialization function */
@@ -32,11 +36,11 @@ vm_bootstrap (void)
 	
 	// readjust where the first address is so that the coremap does not get
 	// overwritten
-	num_pages = (last_addr - first_addr) / PAGE_SIZE;
-	unsigned coremap_size = num_pages * sizeof(struct coremap_entry);
+	coremap_numPages = (last_addr - first_addr) / PAGE_SIZE;
+	unsigned coremap_size = coremap_numPages * sizeof(struct coremap_entry);
 	coremap_size = ROUNDUP(coremap_size, PAGE_SIZE);
 	first_addr += coremap_size;
-	num_pages -= coremap_size / PAGE_SIZE;
+	coremap_numPages -= coremap_size / PAGE_SIZE;
 
 	// initialize the coremap entries
 	int i;
@@ -46,6 +50,9 @@ vm_bootstrap (void)
 		coremap[i].state = VM_STATE_FREE;
 	}
 
+	// update global values
+	coremap_base = first_addr;
+	coremap_end = last_addr;
 	vm_bootstrapped = true;
 }
 
@@ -56,25 +63,41 @@ vm_fault (int faulttype, vaddr_t faultaddress)
 
 }
 
-static
-paddr_t
-getppages(unsigned long npages)
-{
-	paddr_t addr;
-
-	spinlock_acquire(&stealmem_lock);
-
-	addr = ram_stealmem(npages);
-
-	spinlock_release(&stealmem_lock);
-	return addr;
-}
-
 /* Allocate/free kernel heap pages (called by kmalloc/kfree) */
 vaddr_t
 alloc_kpages(unsigned npages)
 {
+	paddr_t addr = 0;
+	// if the vm hasn't bootstrapped, just steal memory
+	if (vm_bootstrapped == false){
+		spinlock_acquire(&stealmem_lock);
+		addr = ram_stealmem(npages);
+		spinlock_release(&stealmem_lock);
 
+	} // otherwise, look for a contiguous chunk of memory in the coremap
+	else {
+		unsigned nfree = 0;
+		unsigned curPage;
+		for (curPage = 0; curPage < coremap_numPages; curPage++){
+			if (coremap[curPage].state == VM_STATE_FREE){
+				nfree++;
+				if (nfree == npages){
+					int i;
+					for (i = curPage; i > curPage - npages; i--){
+						coremap[i].state = VM_STATE_DIRTY;
+						// TODO: change other coremap entry fields
+					}
+					addr = ((curPage + 1 - npages) * PAGE_SIZE) + coremap_base;
+					break;
+				}
+			}
+		}
+	}
+
+	if (addr==0) {
+		return 0;
+	}
+	return PADDR_TO_KVADDR(addr);
 }
 
 void
